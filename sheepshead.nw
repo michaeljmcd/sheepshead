@@ -42,19 +42,44 @@ Core
 
 This is where we model the basic elements of the game, including the
 game itself. The interface should do little more than advance and
-display the game in its own fashion. The entities that need to be
-modeled are:
+display the game in its own fashion. 
 
-. Sheepshead Game
-.. Players
-... Human
-... AI
-.. Stage
-... Deal
-... Bidding/Auction/whatever
-... Tricks
-... Scoring
-. Cards
+We will start at the bottom and build up. What is the most fundamental
+thing in a card game? The cards. You cannot play without them, either
+digitally or physically. The deck in Sheepshead is A-7 (i.e. 2-6s are
+discarded) of each suit (assuming a French deck: clubs, spades,
+hearts, and diamonds).
+
+<<core.lisp>>=
+(in-package :sheepshead)
+
+(defclass card ()
+    ((rank :accessor rank :initarg :rank)
+     (suit :accessor suit :initarg :suit)))
+@
+
+In this class, rank must be >= 7 and <= 14. Where 7-10 are the
+corresponding numbers, 11 = Jack, 12 = Queen, 13 = King, and 14 = Ace.
+Suites are assumed to be members of +'(:clubs :spades :hearts
+:diamonds)+.
+
+This is little better than a C-struct in its current form. We have not
+even bound the members. That is all right though. We will write a
+function to generate a Sheepshead deck. The method used will be
+extremely straightforward. For each suit, we will generate each of the
+cards in the range 7-14.
+
+<<core.lisp>>=
+(defmethod generate-deck ()
+    (let ((deck nil))
+        (loop for suit in '(:clubs :spades :hearts :diamonds)
+            do 
+                (loop for rank from 7 upto 14
+                    do (push (make-instance 'card :rank rank :suit suit) deck)
+                    ))
+         deck
+    ))
+@
 
 Bots
 ----
@@ -62,7 +87,27 @@ Bots
 Interfaces
 ----------
 
-As indicated above,
+The interface in this first version will be simple. Extremely simple.
+Almost childishly simple.
+
+Packaging
+---------
+
+To
+
+<<sheepshead.asd>>=
+(defpackage #:sheepshead
+    (:export card)
+    (:use :cl :asdf))
+
+(defsystem sheepshead
+    :version 0.1
+    :author "Michael McDermott"
+    :license "BSD"
+    :description "Sheepshead"
+    ;:depends-on ()
+    :components ((:file "core")))
+@
 
 Conclusion
 ----------
