@@ -172,9 +172,10 @@ points scored in a single hand).
 
 <<core.lisp>>=
 (defclass player ()
-    ((name :accessor name :initarg name :initform "Foo")
-     (hand :accessor hand :initarg hand :initform nil)
-     (score :accessor score :initform 0)
+    ((name :accessor name :initarg :name :initform "Foo")
+     (hand :accessor hand :initarg :hand :initform nil)
+     (dealer? :accessor dealer? :initarg :dealer? :initform nil)
+     (score :accessor score :initarg :score :initform 0)
     ))
 @
 
@@ -243,9 +244,9 @@ step #1.
 
 <<core.lisp>>=
 (defclass game ()
-    ((players :initarg players :accessor players :initform nil)
-     (goal-points :initarg goal-points :accessor goal-points :initform 0)
-     (hands :initarg hands :accessor hands :initform nil)
+    ((players :initarg :players :accessor players :initform nil)
+     (goal-points :initarg :goal-points :accessor goal-points :initform 0)
+     (hands :initarg :hands :accessor hands :initform nil)
      ))
 @
 
@@ -408,7 +409,7 @@ package should be straightforward.
 
 <<sheepshead.asd>>=
 (defpackage #:sheepshead
-    (:export card +VERSION+ +MINPLAYERS+ +MAXPLAYERS+)
+    (:export game player human-player card +VERSION+ +MINPLAYERS+ +MAXPLAYERS+)
     (:use :cl :asdf))
 
 (defsystem sheepshead
