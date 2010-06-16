@@ -122,7 +122,16 @@ element of a list is O(n) time. So, to implmenet the above algorithm:
 
 <<core.lisp>>=
 (defmethod shuffle-deck ((deck array))
-    )
+    (let ((deck-size 32))
+        (loop for index from (- deck-size 1) downto 1
+            do
+                (let* ((random-index (random index))
+                       (temp (aref deck random-index)))
+                    (setf (aref deck random-index) (aref deck index))
+                    (setf (aref deck index) temp)
+                    ))
+         deck
+        ))
 @
 
 Bots
