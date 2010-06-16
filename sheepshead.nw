@@ -298,7 +298,107 @@ Console
 ~~~~~~~
 
 The console interface is the simplest possible. It is to be the
-Sheepshead equivalent of what happens when you type
+Sheepshead equivalent of what happens when you type +gnuchess+ at the
+command line. A simple, prompt-based interface. No ncurses, no
+windowing, just a simple print out of game events and prompts for
+input.
+
+In the future, we will use libraries for other front ends (especially
+the GUI). In order to prevent unneeded dependencies between them (i.e.
+so that one could install the console version of sheepshead on a
+headless box), we will keep the interface code in separate packages.
+
+==== Initialization ====
+
+We are going to create a simple +main+ function to kick everything
+off. This will also serve as the entry point for +buildapp+ when we
+create a binary.
+
+The MO for this interface will be to:
+
+. Print a welcome banner.
+. Get player options and initialize the corresponding objects.
+. Set up functions to handle game events.
+. Let the game run itself.
+
+To identify ourselves, we will print a nice little welcome banner. As
+gaudy as you can get in plain text.
+
+<<print banner>>=
+(format *standard-output* "Sheepshead version ~A~%Copyright 2010 by Michael McDermott~%~%" sheepshead:+VERSION+)
+@
+
+To initialize the players, we need to get the number of players that
+will be playing and set any other options (in this case, those options
+are name and human vs. CPU control).
+
+<<initialize players>>=
+(let* ((player-count (get-number-of-players)))
+    (print player-count)
+    )
+@
+
+The function +get-number-of-players+ is separated out to keep the code
+nice and neat. It doesn't really do anything surprising, just print
+out a prompt, read in the data, and verify that it is valid.
+
+<<utility functions>>=
+(defun get-number-of-players ()
+    (flet ((valid-input (input) 
+                (let ((player-count (handler-case (parse-integer input :junk-allowed nil)
+                    (sb-int:simple-parse-error (condition)
+                            nil))))
+                    (if (and (integerp player-count)
+                             (>= player-count sheepshead:+MINPLAYERS+)
+                             (<= player-count sheepshead:+MAXPLAYERS+))
+                        t
+                        nil))))
+        (let ((input ""))
+            (loop while (not (valid-input input))
+                do
+                (format *standard-output* "~&Please enter the number of players (3-5): ")
+                (force-output *standard-output*)
+                (setf input (read-line *standard-input*)))
+            (parse-integer input :junk-allowed nil))
+    ))
+@
+
+We can then put all of these pieces together, like so:
+
+<<consoleui.lisp>>=
+(in-package #:sheepshead-consoleui)
+
+(defun main ()
+    <<print banner>>
+    <<initialize players>>
+    <<wire up callbacks>>
+    <<turn control over to game>>)
+
+<<utility functions>>
+@
+
+==== Event Handlers ====
+
+The +game+ class provides hooks for several callbacks. These are so
+that the interface can insert its own logic.
+
+==== Packaging ====
+
+At the moment, the only packaging we are concerned with is an ASDF
+package:
+
+<<sheepshead-consoleui.asd>>=
+(defpackage #:sheepshead-consoleui
+    (:use :cl :asdf))
+
+(defsystem sheepshead-consoleui
+    :version 0.1
+    :author "Michael McDermott"
+    :license "BSD"
+    :description "A Console UI for Sheepshead"
+    :depends-on (:sheepshead)
+    :components ((:file "consoleui")))
+@
 
 Packaging
 ---------
