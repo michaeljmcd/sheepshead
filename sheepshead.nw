@@ -156,8 +156,63 @@ element of a list is O(n) time. So, to implmenet the above algorithm:
         ))
 @
 
-Bots
-----
+Players
+~~~~~~~
+
+With a shuffled pack of cards, the next step is to deal. To deal, we
+need to have a game on, and to have a digital game on, we need to
+model the game. So, let us do that.
+
+Any player, regardless of whether they are human or AI controlled will
+have a name, a hand, and a score (the game's running score, not the
+points scored in a single hand).
+
+<<core.lisp>>=
+(defclass player ()
+    ((name :accessor name :initarg name :initform "Foo")
+     (hand :accessor hand :initarg hand :initform nil)
+     (score :accessor score :initform 0)
+    ))
+@
+
+Another basic is that all players must be able to return their card
+selection for a given trick. While this function must be present, the
+method chosen to pick the card will differ. For a player, the card
+must be selected through the UI. For a bot, the card must be picked
+using the proper algorithm.
+
+<<core.lisp>>=
+(defgeneric play-card ((player player) trick)
+    (throw "No method provided to play a card" nil))
+@
+
+==== Human Controlled ====
+
+A human controlled player will be like the basic one above in all
+respects, save one. Namely, that its +play-card+ implementation must
+get an answer from the UI. The easiest way to do this without tying
+ourselves to any one is to provide a callback as a slot, and call it
+when +play-card+ is called.
+
+<<core.lisp>>=
+(defclass human-player (player)
+    ((play-callback :accessor play-callback :initarg playcallback)))
+
+(defmethod play-card ((player human-player) trick)
+    (funcall (play-callback player) trick))
+@
+
+==== Bots ====
+
+This is the problem with trying to write an artificial intelligence
+for a game I've played almost as long as I can remember: I don't
+really think much about why I play as I do. A lot of it revolves
+around 
+
+=== Games ===
+
+We have cards and players. It is time to put it all together and play
+a game.
 
 Interfaces
 ----------
