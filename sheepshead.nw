@@ -44,6 +44,9 @@ This is where we model the basic elements of the game, including the
 game itself. The interface should do little more than advance and
 display the game in its own fashion. 
 
+A Nice Game of Cards
+~~~~~~~~~~~~~~~~~~~~
+
 We will start at the bottom and build up. What is the most fundamental
 thing in a card game? The cards. You cannot play without them, either
 digitally or physically. The deck in Sheepshead is A-7 (i.e. 2-6s are
@@ -165,7 +168,8 @@ Almost childishly simple.
 Packaging
 ---------
 
-To
+Like most Lisp systems, we will pacakge Sheepshead with ASDF. The
+package should be straightforward.
 
 <<sheepshead.asd>>=
 (defpackage #:sheepshead
@@ -177,7 +181,6 @@ To
     :author "Michael McDermott"
     :license "BSD"
     :description "Sheepshead"
-    ;:depends-on ()
     :components ((:file "core")))
 @
 
