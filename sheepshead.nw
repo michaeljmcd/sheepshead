@@ -85,6 +85,11 @@ The ordering may seem a little strange, but it should make sense with
 knowledge of the rules because it allows rank comparison to be done
 purely as +rank1 > rank2+. 
 
+We will add an implementation of +print-object+ (See section 28.2 of
+Common Lisp the Language; the equivalent of overriding C#'s toString()
+method). Clearly, this will not suffice for the UI, but it will make
+things much, much easier when debugging interactively.
+
 <<core.lisp>>=
 (defmethod print-object ((card card) stream)
     (let ((name (case (rank card)
