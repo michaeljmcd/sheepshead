@@ -218,7 +218,52 @@ around
 === Games ===
 
 We have cards and players. It is time to put it all together and play
-a game.
+a game. Sheepshead game goes through the following phases:
+
+. Play a hand:
+.. The cards are dealt to each player.
+.. Starting at the dealer's left, each player is given the chance to
+take the blind.
+.. If a player takes the blind, he may bury a number of cards
+equivalent to the size of the blind..
+.. Tricks begin. The first trick is opened by the player to the
+dealer's left.
+.. Once all tricks have been played, the number of points is tallied
+for each team.
+. If the provided number of game points has not been reached, go to
+step #1.
+
+<<core.lisp>>=
+(defclass game ()
+    ((players :initarg players :accessor players :initform nil)
+     (goal-points :initarg goal-points :accessor goal-points :initform 0)
+     (hands :initarg hands :accessor hands :initform nil)
+     ))
+@
+
+A game, then, can be simulated with a very simple method. We will
+first check the number of players. While some people claim that you
+can play Sheepshead with less than three or more than five players,
+they are wrong--they are heretics, may they be burnt at the stake. A
+valid game will have 3-5 players, and will play the Jack of Diamonds
+variant when five are playing.
+
+The top level game, then, will follow this basic format:
+
+. Verify that the number of players provided is accurate.
+. Pass deal to the left (or, select the first dealer).
+. Play a hand.
+. Compare scores. If the game is over, return the winning player. If
+not, go back to #1.
+
+<<core.lisp>>=
+(defmethod play-game ((game game))
+    (let ((player-count (length (players game))))
+        (if (and (>= player-count 3) (<= player-count 5))
+            (progn <play the game>)
+            (error "~A is the wrong number of players. There must be 3-5." player-count)
+        )))
+@
 
 Interfaces
 ----------
