@@ -268,23 +268,53 @@ not, go back to #1.
 <<core.lisp>>=
 (defmethod play-game ((game game))
     (let ((player-count (length (players game))))
-        (if (and (>= player-count 3) (<= player-count 5))
+        (if (and (>= player-count +MINPLAYERS+) (<= player-count +MAXPLAYERS+))
             (progn <<play the game>>)
             (error "~A is the wrong number of players. There must be 3-5." player-count)
         )))
 @
 
-Items 2-4 of the above list find their implementation here. Step #2 is
-pretty simple. Each
+Items 2-3 of the above list find their implementation here. Pretty
+much, we indefinitely play hands until the game's target has been
+reached. A target number of points of 0 indicates that the game has no
+preplanned end, even though all good things must come to an end. 
 
 <<play the game>>=
+(do ()
+    ((game-over? game))
+    (play-hand game))
 @
 
-and a hand:
+<<core.lisp>>=
+(defmethod game-over? ((game game))
+    (if (eq (goal-points game) 0)
+        nil
+        (reduce #'(lambda (x y) (or x y))
+                (mapcar #'(lambda (player) 
+                            (>= (score player) (goal-points game)))
+                        (players game))
+                :initial-value nil)
+    ))
+@
 
 <<core.lisp>>=
-(defmethod play-hand ()
-    )
+(defmethod play-hand ((game game))
+    (setf (players game) (rotate-left (players game)))
+    (setf (dealer? (first (players game))) t)
+
+    (deal-hands players))
+@
+
+As seen above, we use rotation a great deal. That is because in a real
+card game, the same things rotate. The definitions are here
+(google-inspired, to be sure):
+
+<<core.lisp>>=
+(defun rotate-left (some-list)
+    (append (cdr some-list) (list (car some-list))))
+
+(defun rotate-right (some-list)
+    (append (last some-list) (butlast some-list)))
 @
 
 Interfaces
