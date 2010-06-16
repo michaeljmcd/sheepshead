@@ -58,6 +58,9 @@ hearts, and diamonds).
 
 (defconstant +LOWCARD+ 7)
 (defconstant +HIGHCARD+ 14)
+(defconstant +VERSION+ 0.1)
+(defconstant +MINPLAYERS+ 3)
+(defconstant +MAXPLAYERS+ 5)
 
 (defclass card ()
     ((rank :accessor rank :initarg :rank)
@@ -265,7 +268,7 @@ not, go back to #1.
 (defmethod play-game ((game game))
     (let ((player-count (length (players game))))
         (if (and (>= player-count 3) (<= player-count 5))
-            (progn <play the game>)
+            (progn <<play the game>>)
             (error "~A is the wrong number of players. There must be 3-5." player-count)
         )))
 @
@@ -305,7 +308,7 @@ package should be straightforward.
 
 <<sheepshead.asd>>=
 (defpackage #:sheepshead
-    (:export card)
+    (:export card +VERSION+ +MINPLAYERS+ +MAXPLAYERS+)
     (:use :cl :asdf))
 
 (defsystem sheepshead
