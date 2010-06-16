@@ -104,7 +104,7 @@ things much, much easier when debugging interactively.
                     (12 "ACE")
                     (13 "JACK")
                     (14 "QUEEN"))))
-    (format stream "~A OF ~A" name (suit card))))
+    (format stream "#<CARD ~A OF ~A>" name (suit card))))
 @
 
 This is little better than a C-struct in its current form. We have not
