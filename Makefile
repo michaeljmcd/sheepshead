@@ -5,3 +5,9 @@ core.lisp: sheepshead.nw
 
 sheepshead.asd: sheepshead.nw
 	notangle -Rsheepshead.asd sheepshead.nw | cpif sheepshead.asd
+
+sheepshead.txt: sheepshead.nw
+	noweave -asciidoc sheepshead.nw | cpif sheepshead.txt
+
+html: sheepshead.txt
+	asciidoc -a toc -d book -b xhtml11 sheepshead.txt
