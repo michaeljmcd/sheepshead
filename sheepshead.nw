@@ -270,11 +270,32 @@ not, go back to #1.
         )))
 @
 
+Items 2-4 of the above list find their implementation here. Step #2 is
+pretty simple. Each
+
+<<play the game>>=
+@
+
+and a hand:
+
+<<core.lisp>>=
+(defmethod play-hand ()
+    )
+@
+
 Interfaces
 ----------
 
-The interface in this first version will be simple. Extremely simple.
-Almost childishly simple.
+One of the primary objectives of this package was to allow plug 'n
+play interfaces. So, there is no one single interface--except for now,
+when I will implement only a single interface. The rest are strictly
+TODO.
+
+Console
+~~~~~~~
+
+The console interface is the simplest possible. It is to be the
+Sheepshead equivalent of what happens when you type
 
 Packaging
 ---------
