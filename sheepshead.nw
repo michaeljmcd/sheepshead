@@ -85,6 +85,20 @@ The ordering may seem a little strange, but it should make sense with
 knowledge of the rules because it allows rank comparison to be done
 purely as +rank1 > rank2+. 
 
+<<core.lisp>>=
+(defmethod print-object ((card card) stream)
+    (let ((name (case (rank card)
+                    (7 "7")
+                    (8 "8")
+                    (9 "9")
+                    (10 "KING")
+                    (11 "10")
+                    (12 "ACE")
+                    (13 "JACK")
+                    (14 "QUEEN"))))
+    (format stream "~A OF ~A" name (suit card))))
+@
+
 This is little better than a C-struct in its current form. We have not
 even bound the members. That is all right though. We will write a
 function to generate a Sheepshead deck. The method used will be
