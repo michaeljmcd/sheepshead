@@ -182,8 +182,9 @@ must be selected through the UI. For a bot, the card must be picked
 using the proper algorithm.
 
 <<core.lisp>>=
-(defgeneric play-card ((player player) trick)
-    (throw "No method provided to play a card" nil))
+(defgeneric play-card (player trick))
+
+(defgeneric take-blind? (player))
 @
 
 ==== Human Controlled ====
@@ -196,10 +197,15 @@ when +play-card+ is called.
 
 <<core.lisp>>=
 (defclass human-player (player)
-    ((play-callback :accessor play-callback :initarg playcallback)))
+    ((play-callback :accessor play-callback :initarg play-callback)
+     (blind-callback :accessor blind-callback :initarg blind-callback)
+     ))
 
 (defmethod play-card ((player human-player) trick)
     (funcall (play-callback player) trick))
+
+(defmethod take-blind? ((player human-player))
+    (funcall (blind-callback player)))
 @
 
 ==== Bots ====
