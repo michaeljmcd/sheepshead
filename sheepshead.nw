@@ -213,7 +213,12 @@ when +play-card+ is called.
 This is the problem with trying to write an artificial intelligence
 for a game I've played almost as long as I can remember: I don't
 really think much about why I play as I do. A lot of it revolves
-around 
+around evaluating my own hand, watching other players' play, and
+making deductions. Later on, I would like to program an AI that takes
+advantage of information has it is revealed during the course of the
+game--perhaps even tracking the other players' tendencies. 
+
+For now, we are going to keep this very simple.
 
 === Games ===
 
