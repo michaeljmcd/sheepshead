@@ -53,32 +53,76 @@ hearts, and diamonds).
 <<core.lisp>>=
 (in-package :sheepshead)
 
+(defconstant +LOWCARD+ 7)
+(defconstant +HIGHCARD+ 14)
+
 (defclass card ()
     ((rank :accessor rank :initarg :rank)
      (suit :accessor suit :initarg :suit)))
 @
 
-In this class, rank must be >= 7 and <= 14. Where 7-10 are the
-corresponding numbers, 11 = Jack, 12 = Queen, 13 = King, and 14 = Ace.
-Suites are assumed to be members of +'(:clubs :spades :hearts
+Suits are assumed to be members of +'(:clubs :spades :hearts
 :diamonds)+.
+Rank must be between 7 and 14, inclusive. The card
+corresponding to each number will start at 7 and follow the Germanic
+ordering that Sheepshead uses. So, the following numbers would
+correspond to the following cards:
+
+.Card constants
+|==============================
+|Constant | Card
+|7        | 7
+|8        | 8
+|9        | 9
+|10       | King
+|11       | 10
+|12       | Ace
+|13       | Jack
+|14       | Queen
+|==============================
+
+The ordering may seem a little strange, but it should make sense with
+knowledge of the rules because it allows rank comparison to be done
+purely as +rank1 > rank2+. 
 
 This is little better than a C-struct in its current form. We have not
 even bound the members. That is all right though. We will write a
 function to generate a Sheepshead deck. The method used will be
 extremely straightforward. For each suit, we will generate each of the
-cards in the range 7-14.
+cards in the range 7-14. 
 
 <<core.lisp>>=
 (defmethod generate-deck ()
-    (let ((deck nil))
+    (let ((deck (make-array '(32)))
+          (index 0))
         (loop for suit in '(:clubs :spades :hearts :diamonds)
             do 
-                (loop for rank from 7 upto 14
-                    do (push (make-instance 'card :rank rank :suit suit) deck)
+                (loop for rank from +LOWCARD+ upto +HIGHCARD+
+                    do 
+                    (setf (aref deck index) (make-instance 'card :rank rank :suit suit))
+                    (setf index (+ index 1))
                     ))
          deck
     ))
+@
+
+We will provide another function, this one to shuffle the deck. The
+algorithm used will be the Fisher-Yates Algorithm
+footnote:[http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle].
+From the above source, the pseudocode is:
+
+    To shuffle an array a of n elements:
+       for i from n - 1 downto 1 do
+             j <- random integer with 0 <= j <= i
+             exchange a[j] and a[i]
+
+Our function will operate on an array, for efficiency's sake.
+Accessing an array, in lisp, is constant time, but accessing the Nth
+element of a list is O(n) time. So, to implmenet the above algorithm:
+
+<<core.lisp>>=
+(defmethod shuffle-deck ((deck array))
+    )
 @
 
 Bots
