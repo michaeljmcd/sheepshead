@@ -228,6 +228,7 @@ We have cards and players. It is time to put it all together and play
 a game. Sheepshead game goes through the following phases:
 
 . Play a hand:
+.. Pass deal to the left.
 .. The cards are dealt to each player.
 .. Starting at the dealer's left, each player is given the chance to
 take the blind.
@@ -258,7 +259,6 @@ variant when five are playing.
 The top level game, then, will follow this basic format:
 
 . Verify that the number of players provided is accurate.
-. Pass deal to the left (or, select the first dealer).
 . Play a hand.
 . Compare scores. If the game is over, return the winning player. If
 not, go back to #1.
@@ -283,6 +283,12 @@ preplanned end, even though all good things must come to an end.
     (play-hand game))
 @
 
+We noted the conditions for a game's ending above. A succinct way of
+stating the requirement is that if the target number of points for the
+game is not 0 (i.e. the game is infinite) and at least one player has
+as many or more points than the target, the game is over. We express
+this succinctly in the method +game-over?+.
+
 <<core.lisp>>=
 (defmethod game-over? ((game game))
     (if (eq (goal-points game) 0)
@@ -295,12 +301,112 @@ preplanned end, even though all good things must come to an end.
     ))
 @
 
+The basic structure of a game is now intact. The next step is to
+implement the various stages pursuant of playing a hand in the
+imaginatively named method +play-hand+.
+
 <<core.lisp>>=
 (defmethod play-hand ((game game))
     (setf (players game) (rotate-left (players game)))
     (setf (dealer? (first (players game))) t)
 
-    (deal-hands players))
+    (deal-hands (players game)))
+@
+
+The function +deal-hands+ generates a new deck, shuffles it, and deals
+a hand to each player. It returns the blind and assumes that the first
+player listed is the dealer. +deal-hands+ must do the following
+things:
+
+. Generate a deck.
+
+. Shuffle the deck.
+
+. Initialize each player's hand to be an empty array of the proper
+size.
+
+. Deal all of the cards out to the players and blind.
+
+. Return the blind.
+
+The reason that the players need not be returned is that they will be
+modified during the function call.
+
+<<core.lisp>>=
+(defun deal-hands (players)
+    (let ((deck (shuffle-deck (generate-deck)))
+          (blind (make-array (list (blind-size (length players)))))
+          (player-count (length players))
+          (hand-size (hand-size (length players))))
+        (dolist (player players)
+            (setf (hand player) 
+                  (make-array (list (hand-size) player-count))
+                  ))
+        (dotimes (index +DECKSIZE+)
+        ))
+@
+
+The blind size, as indicated above, varies with the number of players
+in the game. The rule of thumb is that it is the number of cards
+remaining after all the players have been dealt the maximum number of
+cards while having equal sized hands. Since there are only three
+values, it is far easier to drop them somewhere (a function, in this
+case) than it is to manually recalculate them. The table looks like
+this:
+
+.Blind sizes
+|==============
+|Players | Cards in the blind
+|3       | 2
+|4       | 4
+|5       | 2
+|==============
+
+The only other thing to consider is when the number of players
+provided is invalid. In this case, we signal an error.
+
+<<core.lisp>>=
+(defun blind-size (player-count)
+    (do-if-player-count-valid player-count
+        (case player-count
+            (3 2)
+            (4 4)
+            (5 2))
+    ))
+@
+
+Another comparable function is +hand-size+, which also takes a single
+integer parameter indicating the number of players.
+
+<<core.lisp>>=
+(defun hand-size (player-count)
+    (do-if-player-count-valid player-count
+        (case player-count
+            (3 10)
+            (4 7)
+            (5 6))
+        ))
+@
+
+In several places, we perform an action only if the number of players
+is accurate. This is done to prevent any strange bugs from either
+conscious manipulation of the gamestate or from errors in the front
+end. Because we use this several times, we will wrap it up in a nice
+little macro.
+
+<<core.lisp>>=
+(defmacro do-if-player-count-valid (count &body body)
+    `(if (valid-player-count? ,count)
+        (progn ,@body)
+        (error "There must be 3-5 players. ~A provided." ,count)
+        ))
+@
+
+<<core.lisp>>=
+(defun valid-player-count? (player-count)
+    (and (integerp player-count)
+         (>= player-count +MINPLAYERS+)
+         (<= player-count +MAXPLAYERS+)))
 @
 
 As seen above, we use rotation a great deal. That is because in a real
@@ -390,16 +496,22 @@ out a prompt, read in the data, and verify that it is valid.
     ))
 @
 
+Later on, we are going to turn control over to the +play-game+ method.
+The method we are providing for the UI to update based on game events
+is to
+
 We can then put all of these pieces together, like so:
 
 <<consoleui.lisp>>=
 (in-package #:sheepshead-consoleui)
 
 (defun main ()
-    <<print banner>>
-    <<initialize players>>
-    <<wire up callbacks>>
-    <<turn control over to game>>)
+    (let ((game (make-instance sheepshead:game)))
+        <<print banner>>
+        <<initialize players>>
+        <<wire up callbacks>>
+        <<turn control over to game>>
+        ))
 
 <<utility functions>>
 @
