@@ -61,6 +61,7 @@ hearts, and diamonds).
 (defconstant +VERSION+ 0.1)
 (defconstant +MINPLAYERS+ 3)
 (defconstant +MAXPLAYERS+ 5)
+(defconstant +DECKSIZE+ 32)
 
 (defclass card ()
     ((rank :accessor rank :initarg :rank)
@@ -118,15 +119,14 @@ cards in the range 7-14.
 
 <<core.lisp>>=
 (defmethod generate-deck ()
-    (let ((deck (make-array '(32)))
+    (let ((deck (make-array '(+DECKSIZE+)))
           (index 0))
-        (loop for suit in '(:clubs :spades :hearts :diamonds)
-            do 
-                (loop for rank from +LOWCARD+ upto +HIGHCARD+
-                    do 
-                    (setf (aref deck index) (make-instance 'card :rank rank :suit suit))
-                    (setf index (+ index 1))
-                    ))
+        (dolist (suit '(:clubs :spades :hearts :diamonds))
+            (loop for rank from +LOWCARD+ upto +HIGHCARD+
+                do 
+                (setf (aref deck index) (make-instance 'card :rank rank :suit suit))
+                (setf index (+ index 1))
+                ))
          deck
     ))
 @
@@ -147,16 +147,14 @@ element of a list is O(n) time. So, to implmenet the above algorithm:
 
 <<core.lisp>>=
 (defmethod shuffle-deck ((deck array))
-    (let ((deck-size 32))
-        (loop for index from (- deck-size 1) downto 1
-            do
-                (let* ((random-index (random index))
-                       (temp (aref deck random-index)))
-                    (setf (aref deck random-index) (aref deck index))
-                    (setf (aref deck index) temp)
-                    ))
-         deck
-        ))
+    (loop for index from (- +DECKSIZE+ 1) downto 1
+        do
+            (let* ((random-index (random index))
+                   (temp (aref deck random-index)))
+                (setf (aref deck random-index) (aref deck index))
+                (setf (aref deck index) temp)
+                ))
+     deck)
 @
 
 Players
@@ -311,10 +309,10 @@ card game, the same things rotate. The definitions are here
 
 <<core.lisp>>=
 (defun rotate-left (some-list)
-    (append (cdr some-list) (list (car some-list))))
+    (concatenate 'list (cdr some-list) (list (car some-list))))
 
 (defun rotate-right (some-list)
-    (append (last some-list) (butlast some-list)))
+    (concatenate 'list (last some-list) (butlast some-list)))
 @
 
 Interfaces
@@ -379,9 +377,7 @@ out a prompt, read in the data, and verify that it is valid.
                 (let ((player-count (handler-case (parse-integer input :junk-allowed nil)
                     (sb-int:simple-parse-error (condition)
                             nil))))
-                    (if (and (integerp player-count)
-                             (>= player-count sheepshead:+MINPLAYERS+)
-                             (<= player-count sheepshead:+MAXPLAYERS+))
+                    (if (sheepshead:valid-player-count? player-count)
                         t
                         nil))))
         (let ((input ""))
@@ -439,7 +435,9 @@ package should be straightforward.
 
 <<sheepshead.asd>>=
 (defpackage #:sheepshead
-    (:export game player human-player card +VERSION+ +MINPLAYERS+ +MAXPLAYERS+)
+    (:export game player human-player card 
+             +VERSION+ +MINPLAYERS+ +MAXPLAYERS+
+             valid-player-count?)
     (:use :cl :asdf))
 
 (defsystem sheepshead
