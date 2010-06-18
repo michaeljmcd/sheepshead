@@ -421,6 +421,27 @@ card game, the same things rotate. The definitions are here
     (concatenate 'list (last some-list) (butlast some-list)))
 @
 
+Packaging
+~~~~~~~~~
+
+Like most Lisp systems, we will pacakge Sheepshead with ASDF. The
+package should be straightforward.
+
+<<sheepshead.asd>>=
+(defpackage #:sheepshead
+    (:export game player human-player card 
+             +VERSION+ +MINPLAYERS+ +MAXPLAYERS+
+             valid-player-count?)
+    (:use :cl :asdf))
+
+(defsystem sheepshead
+    :version 0.1
+    :author "Michael McDermott"
+    :license "BSD"
+    :description "Sheepshead"
+    :components ((:file "core")))
+@
+
 Interfaces
 ----------
 
@@ -537,27 +558,6 @@ package:
     :description "A Console UI for Sheepshead"
     :depends-on (:sheepshead)
     :components ((:file "consoleui")))
-@
-
-Packaging
----------
-
-Like most Lisp systems, we will pacakge Sheepshead with ASDF. The
-package should be straightforward.
-
-<<sheepshead.asd>>=
-(defpackage #:sheepshead
-    (:export game player human-player card 
-             +VERSION+ +MINPLAYERS+ +MAXPLAYERS+
-             valid-player-count?)
-    (:use :cl :asdf))
-
-(defsystem sheepshead
-    :version 0.1
-    :author "Michael McDermott"
-    :license "BSD"
-    :description "Sheepshead"
-    :components ((:file "core")))
 @
 
 Conclusion
