@@ -119,7 +119,8 @@ cards in the range 7-14.
 
 <<core.lisp>>=
 (defmethod generate-deck ()
-    (let ((deck (make-array (+DECKSIZE+)))
+    (let ((deck (make-array (list +DECKSIZE+) 
+                            :fill-pointer +DECKSIZE+))
           (index 0))
         (dolist (suit '(:clubs :spades :hearts :diamonds))
             (loop for rank from +LOWCARD+ upto +HIGHCARD+
@@ -328,15 +329,33 @@ modified during the function call.
 <<core.lisp>>=
 (defun deal-hands (players)
     (let ((deck (shuffle-deck (generate-deck)))
-          (blind (make-array (list (blind-size (length players)))))
-          (player-count (length players))
-          (hand-size (hand-size (length players))))
+          (blind (make-array (list (blind-size (length players)))
+                             :fill-pointer 0))
+          (hand-size (hand-size (length players)))
+          (blind-size (blind-size (length players))))
         (dolist (player players)
             (setf (hand player) 
-                  (make-array (list (hand-size) player-count))
+                  (make-array (list hand-size)
+                              :fill-pointer 0)
                   ))
-        (dotimes (index +DECKSIZE+)
+        (dotimes (index hand-size)
+            (unless (>= (fill-pointer blind) blind-size)
+                (vector-push (vector-pop deck) blind))
+            (dolist (player players)
+                (add-card player (vector-pop deck))
+                ))
+        blind
         ))
+@
+
+Rather than writing an ugly +setf+ call like: 
+[[(setf (aref (hand (nth 5 players))) next-card)]]
+We will add a method to the +player+ class and let it decide how to
+add the card to its hand. 
+
+<<core.lisp>>=
+(defmethod add-card ((player player) (card card))
+    (vector-push card (hand player)))
 @
 
 The blind size, as indicated above, varies with the number of players
@@ -430,7 +449,7 @@ package should be straightforward.
 
 <<sheepshead.asd>>=
 (defpackage #:sheepshead
-    (:export game player human-player card 
+    (:export game player human-player card hand
              +VERSION+ +MINPLAYERS+ +MAXPLAYERS+
              valid-player-count?)
     (:use :cl :asdf))
