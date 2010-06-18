@@ -119,7 +119,7 @@ cards in the range 7-14.
 
 <<core.lisp>>=
 (defmethod generate-deck ()
-    (let ((deck (make-array '(+DECKSIZE+)))
+    (let ((deck (make-array (+DECKSIZE+)))
           (index 0))
         (dolist (suit '(:clubs :spades :hearts :diamonds))
             (loop for rank from +LOWCARD+ upto +HIGHCARD+
@@ -263,24 +263,17 @@ The top level game, then, will follow this basic format:
 . Compare scores. If the game is over, return the winning player. If
 not, go back to #1.
 
-<<core.lisp>>=
-(defmethod play-game ((game game))
-    (let ((player-count (length (players game))))
-        (if (and (>= player-count +MINPLAYERS+) (<= player-count +MAXPLAYERS+))
-            (progn <<play the game>>)
-            (error "~A is the wrong number of players. There must be 3-5." player-count)
-        )))
-@
-
 Items 2-3 of the above list find their implementation here. Pretty
 much, we indefinitely play hands until the game's target has been
 reached. A target number of points of 0 indicates that the game has no
 preplanned end, even though all good things must come to an end. 
 
-<<play the game>>=
-(do ()
-    ((game-over? game))
-    (play-hand game))
+<<core.lisp>>=
+(defmethod play-game ((game game))
+    (do-if-player-count-valid (length (players game))
+        (do ()
+            ((game-over? game))
+            (play-hand game))))
 @
 
 We noted the conditions for a game's ending above. A succinct way of
@@ -401,6 +394,14 @@ little macro.
         (error "There must be 3-5 players. ~A provided." ,count)
         ))
 @
+
+Often, we find ourselves checking the number of players. A quick
+little utility function makes this much easier. +valid-player-count?+
+ensures that the number passed to it is:
+
+. An integer.
+. Between the minimum number of players (3) and the maximum number of
+players (5) inclusive.
 
 <<core.lisp>>=
 (defun valid-player-count? (player-count)
