@@ -186,8 +186,8 @@ using the proper algorithm.
 
 <<core.lisp>>=
 (defgeneric play-card (player trick))
-
 (defgeneric take-blind? (player))
+(defgeneric bury (player blind))
 @
 
 ==== Human Controlled ====
@@ -202,6 +202,7 @@ when +play-card+ is called.
 (defclass human-player (player)
     ((play-callback :accessor play-callback :initarg play-callback)
      (blind-callback :accessor blind-callback :initarg blind-callback)
+     (bury-callback :accessor bury-callback :initarg bury-callback)
      ))
 
 (defmethod play-card ((player human-player) trick)
@@ -209,6 +210,9 @@ when +play-card+ is called.
 
 (defmethod take-blind? ((player human-player))
     (funcall (blind-callback player)))
+
+(defmethod bury ((player human-player) blind)
+    (funcall (bury-callback player) blind))
 @
 
 ==== Bots ====
@@ -304,8 +308,14 @@ imaginatively named method +play-hand+.
     (setf (players game) (rotate-left (players game)))
     (setf (dealer? (first (players game))) t)
 
-    (deal-hands (players game)))
+    (let ((blind (deal-hands (players game))))
+        (let ((taker (take-round (rotate-left (players game)))))
+            (unless (null taker)
+                (bury taker blind)))
+        ))
 @
+
+==== The Deal ====
 
 The function +deal-hands+ generates a new deck, shuffles it, and deals
 a hand to each player. It returns the blind and assumes that the first
@@ -342,20 +352,40 @@ modified during the function call.
             (unless (>= (fill-pointer blind) blind-size)
                 (vector-push (vector-pop deck) blind))
             (dolist (player players)
-                (add-card player (vector-pop deck))
+                (vector-push (vector-pop deck) (hand player))
                 ))
         blind
         ))
 @
 
-Rather than writing an ugly +setf+ call like: 
-[[(setf (aref (hand (nth 5 players))) next-card)]]
-We will add a method to the +player+ class and let it decide how to
-add the card to its hand. 
+==== The Auction ====
+
+I do not really know that auction is the correct term here. To be
+sure, I do not even know what the correct term might be, but since
+this word is used for the equivalent phase of the game in Bridge and
+Skat, it seemed as good a choice as any.
+
+The auction, as it is, consists of giving each player the opportunity
+to take the blind, starting with the first player from the dealer's
+left. We will simulate this phase in the function +take-round+. The
+function itself will not be responsible for determining whether or not
+a given player will take the blind. Rather, this responsibility will
+be delegated to the +take-blind?+ method of the player.
+
+If a player takes the blind, their +role+ slot will be updated
+accordingly, and they will be returned. If no one takes the blind,
++nil+ will be returned.
 
 <<core.lisp>>=
-(defmethod add-card ((player player) (card card))
-    (vector-push card (hand player)))
+(defun take-round (players)
+    (if (null players)
+        nil
+        (let ((decision (take-blind? (car players))))
+            (if decision
+                (car players)
+                (take-round (cdr players))
+                ))
+    ))
 @
 
 The blind size, as indicated above, varies with the number of players
