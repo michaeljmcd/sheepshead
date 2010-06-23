@@ -108,7 +108,7 @@ things much, much easier when debugging interactively.
                     (12 "ACE")
                     (13 "JACK")
                     (14 "QUEEN"))))
-    (format stream "#<CARD ~A OF ~A>" name (suit card))))
+    (format stream "~A OF ~A" name (suit card))))
 @
 
 This is little better than a C-struct in its current form. We have not
@@ -387,6 +387,27 @@ accordingly, and they will be returned. If no one takes the blind,
                 ))
     ))
 @
+
+==== Burying ====
+
+The player who takes the blind may bury two cards (as points) up
+front. As with other decision making processes, the precise method
+used is delegated to the specific subclass of +player+ and its +bury+
+method.
+
+==== Tricks ====
+
+Once the taking has or has not occurred, the main portion of the game
+starts. The player to the dealer's left leads off the first trick and
+the winner of each trick thereafter begins the next.
+
+==== Scoring ====
+
+The scoring happens on two levels, each occurring after the end of the
+hand. Those two levels are scoring the hand (and, by extension,
+determining the winner(s)) and scoring the game.
+
+=== Utilities ===
 
 The blind size, as indicated above, varies with the number of players
 in the game. The rule of thumb is that it is the number of cards
