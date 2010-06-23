@@ -479,7 +479,7 @@ package should be straightforward.
 
 <<sheepshead.asd>>=
 (defpackage #:sheepshead
-    (:export game player human-player card hand
+    (:export game player human-player card hand name
              +VERSION+ +MINPLAYERS+ +MAXPLAYERS+
              valid-player-count?)
     (:use :cl :asdf))
@@ -527,57 +527,13 @@ The MO for this interface will be to:
 . Set up functions to handle game events.
 . Let the game run itself.
 
-To identify ourselves, we will print a nice little welcome banner. As
-gaudy as you can get in plain text.
-
-<<print banner>>=
-(format *standard-output* "Sheepshead version ~A~%Copyright 2010 by Michael McDermott~%~%" sheepshead:+VERSION+)
-@
-
-To initialize the players, we need to get the number of players that
-will be playing and set any other options (in this case, those options
-are name and human vs. CPU control).
-
-<<initialize players>>=
-(let* ((player-count (get-number-of-players)))
-    (print player-count)
-    )
-@
-
-The function +get-number-of-players+ is separated out to keep the code
-nice and neat. It doesn't really do anything surprising, just print
-out a prompt, read in the data, and verify that it is valid.
-
-<<utility functions>>=
-(defun get-number-of-players ()
-    (flet ((valid-input (input) 
-                (let ((player-count (handler-case (parse-integer input :junk-allowed nil)
-                    (sb-int:simple-parse-error (condition)
-                            nil))))
-                    (if (sheepshead:valid-player-count? player-count)
-                        t
-                        nil))))
-        (let ((input ""))
-            (loop while (not (valid-input input))
-                do
-                (format *standard-output* "~&Please enter the number of players (3-5): ")
-                (force-output *standard-output*)
-                (setf input (read-line *standard-input*)))
-            (parse-integer input :junk-allowed nil))
-    ))
-@
-
-Later on, we are going to turn control over to the +play-game+ method.
-The method we are providing for the UI to update based on game events
-is to
-
 We can then put all of these pieces together, like so:
 
 <<consoleui.lisp>>=
 (in-package #:sheepshead-consoleui)
 
 (defun main ()
-    (let ((game (make-instance sheepshead:game)))
+    (let ((game (make-instance 'sheepshead:game)))
         <<print banner>>
         <<initialize players>>
         <<wire up callbacks>>
@@ -587,10 +543,81 @@ We can then put all of these pieces together, like so:
 <<utility functions>>
 @
 
+To identify ourselves, we will print a nice little welcome banner. As
+gaudy as you can get in plain text.
+
+<<print banner>>=
+(format *standard-output* "Sheepshead version ~A~%Copyright 2010 by Michael McDermott~%~%" sheepshead:+VERSION+)
+@
+
+==== Initialize Players ====
+
+To initialize the players, we need to get the number of players that
+will be playing and set any other options (in this case, those options
+are name and human vs. CPU control).
+
+<<initialize players>>=
+(let* ((player-count (get-integer "~&Please enter the number of players (3-5): " :test-fn #'sheepshead::valid-player-count?))
+       (player-list nil))
+    (dotimes (index player-count)
+        (let ((control-choice (get-integer (format nil "~%Should player ~A be: ~%1.  Human-controlled~%2.  AI~%>" (1+ index)) :test-fn #'(lambda (x) (and (>= x 1) (<= x 2))))))
+            (if (eq control-choice 1)
+                (let ((player (make-instance 'sheepshead::human-player)))
+                    (push player player-list))
+                    )))
+    (setf (sheepshead:players game) player-list))
+@
+
+The function +get-integer+ is separated out to keep the code nice and neat.
+It doesn't really do anything surprising, just print out a prompt, read in
+the data, and verify that it is valid. If the input read in is not a valid
+integer, the prompt will be repeated until a valid answer is given.
+
+<<utility functions>>=
+(defun get-integer (prompt &key (test-fn nil))
+    (flet ((valid-input (input) 
+                (let ((parsed-output (parse-integer input :junk-allowed t)))
+                    (and parsed-output
+                        (or (null test-fn) 
+                            (funcall test-fn parsed-output))))
+
+                ))
+    (let ((input ""))
+        (loop while (not (valid-input input))
+            do
+            (format *standard-output* prompt)
+            (force-output *standard-output*)
+            (setf input (read-line *standard-input*)))
+        (parse-integer input :junk-allowed t))
+    ))
+@
+
+Later on, we are going to turn control over to the +play-game+ method.
+The method we are providing for the UI to update based on game events
+is to
+
 ==== Event Handlers ====
 
-The +game+ class provides hooks for several callbacks. These are so
-that the interface can insert its own logic.
+<<utility functions>>=
+(defun take-blind-prompt (player)
+    (format *standard-output* 
+            "~A~%~A: Would you like to take the blind? [Y/N] > "
+            (print-hand player)
+            (sheepshead:name player))
+    (read-line *standard-input*))
+@
+
+To display a player's full hand, we will duck tape in an additional
+method, +print-hand+ which, as it implies, will print out every 
+
+<<utility functions>>=
+(defmethod print-hand ((player sheepshead:player))
+    (let ((output-stream (make-string-output-stream)))
+        (loop for card across (sheepshead:hand player)
+            do (format output-stream " ~A " card))
+        (get-output-stream-string output-stream)
+        ))
+@
 
 ==== Packaging ====
 
