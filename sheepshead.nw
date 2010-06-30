@@ -53,6 +53,7 @@ digitally or physically. The deck in Sheepshead is A-7 (i.e. 2-6s are
 discarded) of each suit (assuming a French deck: clubs, spades,
 hearts, and diamonds).
 
+[source,lisp]
 <<core.lisp>>=
 (in-package :sheepshead)
 
@@ -97,6 +98,7 @@ Common Lisp the Language; the equivalent of overriding C#'s toString()
 method). Clearly, this will not suffice for the UI, but it will make
 things much, much easier when debugging interactively.
 
+[source,lisp]
 <<core.lisp>>=
 (defmethod print-object ((card card) stream)
     (let ((name (case (rank card)
@@ -117,6 +119,7 @@ function to generate a Sheepshead deck. The method used will be
 extremely straightforward. For each suit, we will generate each of the
 cards in the range 7-14. 
 
+[source,lisp]
 <<core.lisp>>=
 (defmethod generate-deck ()
     (let ((deck (make-array (list +DECKSIZE+) 
@@ -146,6 +149,7 @@ Our function will operate on an array, for efficiency's sake.
 Accessing an array, in lisp, is constant time, but accessing the Nth
 element of a list is O(n) time. So, to implmenet the above algorithm:
 
+[source,lisp]
 <<core.lisp>>=
 (defmethod shuffle-deck ((deck array))
     (loop for index from (- +DECKSIZE+ 1) downto 1
@@ -169,6 +173,7 @@ Any player, regardless of whether they are human or AI controlled will
 have a name, a hand, and a score (the game's running score, not the
 points scored in a single hand).
 
+[source,lisp]
 <<core.lisp>>=
 (defclass player ()
     ((name :accessor name :initarg :name :initform "Foo")
@@ -184,6 +189,7 @@ method chosen to pick the card will differ. For a player, the card
 must be selected through the UI. For a bot, the card must be picked
 using the proper algorithm.
 
+[source,lisp]
 <<core.lisp>>=
 (defgeneric play-card (player trick))
 (defgeneric take-blind? (player))
@@ -198,6 +204,7 @@ get an answer from the UI. The easiest way to do this without tying
 ourselves to any one is to provide a callback as a slot, and call it
 when +play-card+ is called.
 
+[source,lisp]
 <<core.lisp>>=
 (defclass human-player (player)
     ((play-callback :accessor play-callback :initarg play-callback)
@@ -246,6 +253,7 @@ for each team.
 . If the provided number of game points has not been reached, go to
 step #1.
 
+[source,lisp]
 <<core.lisp>>=
 (defclass game ()
     ((players :initarg :players :accessor players :initform nil)
@@ -273,6 +281,7 @@ much, we indefinitely play hands until the game's target has been
 reached. A target number of points of 0 indicates that the game has no
 preplanned end, even though all good things must come to an end. 
 
+[source,lisp]
 <<core.lisp>>=
 (defmethod play-game ((game game))
     (do-if-player-count-valid (length (players game))
@@ -287,6 +296,7 @@ game is not 0 (i.e. the game is infinite) and at least one player has
 as many or more points than the target, the game is over. We express
 this succinctly in the method +game-over?+.
 
+[source,lisp]
 <<core.lisp>>=
 (defmethod game-over? ((game game))
     (if (eq (goal-points game) 0)
@@ -303,6 +313,7 @@ The basic structure of a game is now intact. The next step is to
 implement the various stages pursuant of playing a hand in the
 imaginatively named method +play-hand+.
 
+[source,lisp]
 <<core.lisp>>=
 (defmethod play-hand ((game game))
     (setf (players game) (rotate-left (players game)))
@@ -336,6 +347,7 @@ size.
 The reason that the players need not be returned is that they will be
 modified during the function call.
 
+[source,lisp]
 <<core.lisp>>=
 (defun deal-hands (players)
     (let ((deck (shuffle-deck (generate-deck)))
@@ -376,6 +388,7 @@ If a player takes the blind, their +role+ slot will be updated
 accordingly, and they will be returned. If no one takes the blind,
 +nil+ will be returned.
 
+[source,lisp]
 <<core.lisp>>=
 (defun take-round (players)
     (if (null players)
@@ -428,6 +441,7 @@ this:
 The only other thing to consider is when the number of players
 provided is invalid. In this case, we signal an error.
 
+[source,lisp]
 <<core.lisp>>=
 (defun blind-size (player-count)
     (do-if-player-count-valid player-count
@@ -441,6 +455,7 @@ provided is invalid. In this case, we signal an error.
 Another comparable function is +hand-size+, which also takes a single
 integer parameter indicating the number of players.
 
+[source,lisp]
 <<core.lisp>>=
 (defun hand-size (player-count)
     (do-if-player-count-valid player-count
@@ -457,6 +472,7 @@ conscious manipulation of the gamestate or from errors in the front
 end. Because we use this several times, we will wrap it up in a nice
 little macro.
 
+[source,lisp]
 <<core.lisp>>=
 (defmacro do-if-player-count-valid (count &body body)
     `(if (valid-player-count? ,count)
@@ -473,6 +489,7 @@ ensures that the number passed to it is:
 . Between the minimum number of players (3) and the maximum number of
 players (5) inclusive.
 
+[source,lisp]
 <<core.lisp>>=
 (defun valid-player-count? (player-count)
     (and (integerp player-count)
@@ -484,6 +501,7 @@ As seen above, we use rotation a great deal. That is because in a real
 card game, the same things rotate. The definitions are here
 (google-inspired, to be sure):
 
+[source,lisp]
 <<core.lisp>>=
 (defun rotate-left (some-list)
     (concatenate 'list (cdr some-list) (list (car some-list))))
@@ -550,6 +568,7 @@ The MO for this interface will be to:
 
 We can then put all of these pieces together, like so:
 
+[source,lisp]
 <<consoleui.lisp>>=
 (in-package #:sheepshead-consoleui)
 
@@ -567,6 +586,7 @@ We can then put all of these pieces together, like so:
 To identify ourselves, we will print a nice little welcome banner. As
 gaudy as you can get in plain text.
 
+[source,lisp]
 <<print banner>>=
 (format *standard-output* "Sheepshead version ~A~%Copyright 2010 by Michael McDermott~%~%" sheepshead:+VERSION+)
 @
@@ -577,16 +597,27 @@ To initialize the players, we need to get the number of players that
 will be playing and set any other options (in this case, those options
 are name and human vs. CPU control).
 
+[source,lisp]
 <<initialize players>>=
 (let* ((player-count (get-integer "~&Please enter the number of players (3-5): " :test-fn #'sheepshead::valid-player-count?))
        (player-list nil))
     (dotimes (index player-count)
-        (let ((control-choice (get-integer (format nil "~%Should player ~A be: ~%1.  Human-controlled~%2.  AI~%>" (1+ index)) :test-fn #'(lambda (x) (and (>= x 1) (<= x 2))))))
-            (if (eq control-choice 1)
-                (let ((player (make-instance 'sheepshead::human-player)))
-                    (push player player-list))
-                    )))
+        (let ((control-choice (get-integer (format nil "~%Should player ~A be: ~%1.  Human-controlled~%2.  AI~%> " (1+ index)) :test-fn #'(lambda (x) (and (>= x 1) (<= x 2)))))
+              (player-name (get-player-name index)))
+            (case control-choice
+                (1 (let ((player (make-instance 'sheepshead:human-player :name player-name)))
+                        <<wire up callbacks>>
+                        (push player player-list)))
+                (2 (let ((player (make-instance 'sheepshead:bot-player :name player-name)))
+                        (push player player-list)))
+             )))
     (setf (sheepshead:players game) player-list))
+@
+
+<<wire up callbacks>>=
+(setf (sheepshead:play-callback player) #'play-prompt)
+(setf (sheepshead:bury-callback player) #'bury-prompt)
+(setf (sheepshead:blind-callback player) #'blind-prompt)
 @
 
 The function +get-integer+ is separated out to keep the code nice and neat.
@@ -594,6 +625,7 @@ It doesn't really do anything surprising, just print out a prompt, read in
 the data, and verify that it is valid. If the input read in is not a valid
 integer, the prompt will be repeated until a valid answer is given.
 
+[source,lisp]
 <<utility functions>>=
 (defun get-integer (prompt &key (test-fn nil))
     (flet ((valid-input (input) 
@@ -660,6 +692,8 @@ package:
 
 Conclusion
 ----------
+
+In the future, more interfaces would be nice. Especially a graphical one.
 
 Index
 -----
