@@ -216,7 +216,7 @@ when +play-card+ is called.
     (funcall (play-callback player) trick))
 
 (defmethod take-blind? ((player human-player))
-    (funcall (blind-callback player)))
+    (funcall (blind-callback player) player))
 
 (defmethod bury ((player human-player) blind)
     (funcall (bury-callback player) blind))
@@ -233,6 +233,11 @@ advantage of information has it is revealed during the course of the
 game--perhaps even tracking the other players' tendencies. 
 
 For now, we are going to keep this very simple.
+
+[source,lisp]
+<<core.lisp>>=
+(defclass bot-player (player) ())
+@
 
 === Games ===
 
@@ -516,9 +521,11 @@ Packaging
 Like most Lisp systems, we will pacakge Sheepshead with ASDF. The
 package should be straightforward.
 
+[source,lisp]
 <<sheepshead.asd>>=
 (defpackage #:sheepshead
     (:export game player human-player card hand name
+             play-callback bury-callback blind-callback bot-player
              +VERSION+ +MINPLAYERS+ +MAXPLAYERS+
              valid-player-count?)
     (:use :cl :asdf))
@@ -576,7 +583,6 @@ We can then put all of these pieces together, like so:
     (let ((game (make-instance 'sheepshead:game)))
         <<print banner>>
         <<initialize players>>
-        <<wire up callbacks>>
         <<turn control over to game>>
         ))
 
@@ -645,24 +651,38 @@ integer, the prompt will be repeated until a valid answer is given.
     ))
 @
 
-Later on, we are going to turn control over to the +play-game+ method.
-The method we are providing for the UI to update based on game events
-is to
+The next function is a convenience, to keep the initial set up code
+clean. It displays a prompt, reads a string and returns it.
+
+[source,lisp]
+<<utility functions>>=
+(defun get-player-name (player-number)
+    (get-string 
+        (format nil "~%Enter a name for player #~A" player-number)
+        :default-value (format nil "Player ~A" player-number)))
+@
+
+The heart of the function is yet another one that we will be using in
+future areas to prompt for input, is a simple little function to get a
+string named +get-string+.
+
+[source,lisp]
+<<utility functions>>=
+(defun get-string (prompt &key (default-value nil))
+    (format *standard-output* prompt)
+    (let ((input (read-line)))
+        (if (equalp input "")
+            default-value
+            input)
+        ))
+@
 
 ==== Event Handlers ====
-
-<<utility functions>>=
-(defun take-blind-prompt (player)
-    (format *standard-output* 
-            "~A~%~A: Would you like to take the blind? [Y/N] > "
-            (print-hand player)
-            (sheepshead:name player))
-    (read-line *standard-input*))
-@
 
 To display a player's full hand, we will duck tape in an additional
 method, +print-hand+ which, as it implies, will print out every 
 
+[source,lisp]
 <<utility functions>>=
 (defmethod print-hand ((player sheepshead:player))
     (let ((output-stream (make-string-output-stream)))
@@ -672,11 +692,20 @@ method, +print-hand+ which, as it implies, will print out every
         ))
 @
 
+[source,lisp]
+<<utility functions>>=
+(defun blind-prompt (player)
+    (print-hand player)
+    (get-string (format nil "~%~A: Would you like to take the blind? ")
+    )
+@
+
 ==== Packaging ====
 
 At the moment, the only packaging we are concerned with is an ASDF
 package:
 
+[source,lisp]
 <<sheepshead-consoleui.asd>>=
 (defpackage #:sheepshead-consoleui
     (:use :cl :asdf))
