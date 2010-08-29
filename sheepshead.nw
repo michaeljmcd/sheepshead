@@ -794,15 +794,20 @@ are name and human vs. CPU control).
 @
 
 <<wire up callbacks>>=
-(setf (sheepshead:play-callback player) #'play-prompt)
+;(setf (sheepshead:play-callback player) #'play-prompt)
 (setf (sheepshead:bury-callback player) #'bury-prompt)
-(setf (sheepshead:blind-callback player) #'blind-prompt)
+;(setf (sheepshead:blind-callback player) #'blind-prompt)
 @
 
 The function +get-integer+ is separated out to keep the code nice and neat.
 It doesn't really do anything surprising, just print out a prompt, read in
 the data, and verify that it is valid. If the input read in is not a valid
 integer, the prompt will be repeated until a valid answer is given.
+
+The remaining parameters are key-based, the first one being +test-fn+. This
+is a function to determine if the number is valid, for whatever purpose is
+intended. This is as opposed to if it is an integer. If +test-fn+ is
+provided and returns +nil+, the prompt will be made again.
 
 [source,lisp]
 <<utility functions>>=
@@ -831,7 +836,7 @@ clean. It displays a prompt, reads a string and returns it.
 <<utility functions>>=
 (defun get-player-name (player-number)
     (get-string 
-        (format nil "~%Enter a name for player #~A" player-number)
+        (format nil "~%Enter a name for player #~A " (1+ player-number))
         :default-value (format nil "Player ~A" player-number)))
 @
 
