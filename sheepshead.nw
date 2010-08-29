@@ -319,17 +319,188 @@ The basic structure of a game is now intact. The next step is to
 implement the various stages pursuant of playing a hand in the
 imaginatively named method +play-hand+.
 
+First, we deal the cards and find out who (if anyone) will take the
+blind. Then, we begin the main loop.
+
 [source,lisp]
 <<core.lisp>>=
 (defmethod play-hand ((game game))
     (setf (players game) (rotate-left (players game)))
     (setf (dealer? (first (players game))) t)
 
-    (let ((blind (deal-hands (players game))))
-        (let ((taker (take-round (rotate-left (players game)))))
+    (let* ((blind (deal-hands (players game)))
+           (taker (take-round (rotate-left (players game)))))
             (unless (null taker)
                 (bury taker blind)))
-        ))
+    (play-tricks (reverse (players game))))
+@
+
+The next thing to do is deal with trick-playing. Let's begin by laying
+out the properties of this:
+
+. We have to continue until there are no cards in any player's hand.
+. The number of rounds will be equal to the number of cards in a given
+player's hand.
+. The ranking of cards is affected by the first card played (i.e.
+which suit is lead), so that information will have to be maintained.
+. The player to win a given trick +n+ starts trick +n + 1+ for any
+trick +> 0+.
+
+For #1, the obvious method is to iterate from 0 to the number of cards
+in a hand. Recursion would work, but is less readable in this instance
+than using Lisp's +loop+ facility.
+
+For each round, we begin with the first player and prompt each player
+for a card, passing in the set of cards played so far.
+
+After each player has played, we determine the winner, add the trick
+to their tricks won, and rotate the list of players to match. We can
+lay this out as follows:
+
+[source,lisp]
+<<core.lisp>>=
+(defun play-tricks (players &key (leaster nil))
+    (loop for index from 0 to (hand-size (length players))
+          do (play-trick players nil nil)))
+@
+
+The heart of this function is +play-trick+, so we will define it next.
+
+[source,lisp]
+<<core.lisp>>=
+(defun play-trick (remaining-players cards winning-player)
+    (if (null remaining-players)
+        (values (reverse cards) winning-player)
+        (let ((next-card (play-card (car remaining-players) cards)))
+            (if (leading-card? next-card cards)
+                (play-trick (cdr remaining-players) 
+                            (cons next-card cards)
+                            (car remaining-players))
+                (play-trick (cdr remaining-players)
+                            (cons next-card cards)
+                            winning-player))
+                            )))
+@
+
+As we can see, +play-trick+ is a simple recursive function that takes
+a card from each player, then returns the set of cards played in the
+trick and the winning player. The latter is accomplished primarily
+through the use of the function +leading-card?+ which determines if a
+new card will be the leading one of those played so far.
+
+We can define the conditions when this will be true as follows:
+
+. It is the first card.
+. It is of the same suit as the first card, but the highest of that
+suit to be played so far and no other trump have been played so far.
+. It is a trump card and the highest such card played so far.
+
+As a study of contrasts, we can examine the conditions under which the
+result should be false:
+
+. The card is neither trump nor the leading suit.
+. The card is of the leading suit, but less so than another card
+played or a trump card has been played.
+. The card is trump, but of lesser rank than a trump played so far.
+
+We will entitle the two parameters being passed in +new-card+ and
++previous-cards+, respectively. Their purposes should be fairly
+clear. Now, let us define in more concrete terms the method used:
+
+. If +previous-cards+ is +nil+, return true.
+. If a trump card has been played:
+.. and the card is not a trump, return false.
+.. and the card is the highest trump card played, return true.
+. If no trump has been played:
+.. and the card is a trump, return true.
+.. and the card is not of the leading suit, return false.
+.. and the card is of the leading suit, return a simple test.
+
+Most of the items in that list are pretty simple to determine,
+particularly with the utilities that we will see a little bit later,
+the only two that take a little more thought are items 2b and 3c. It
+turns out that 2b and 3c are mirrors of one another in that, in both
+cases, the current card is a member of the set in which the leading
+card already is. To handle this, we will look at a function later
+that, given a set of cards and a class to look for (a suit or trump),
+will find the highest card of that class in the set.
+
+[source,lisp]
+<<core.lisp>>=
+(defun leading-card? (new-card previous-cards)
+    (if (null previous-cards)
+        t
+        (let ((first-card (nth 0 previous-cards)))
+            (if (contains-trump? previous-cards)
+                (cond 
+                    ((and (trump? new-card)
+                          (> (rank new-card) 
+                             (max-card-in-set previous-cards :trump)))
+                          t)
+                     (t nil))
+                (cond
+                    ((trump? new-card) t)
+                    ((not (eq (suit new-card) (suit first-card))) nil)
+                    ((and (eq (suit new-card) (suit first-card)))
+                          (> (rank new-card)
+                             (max-card-in-set previous-cards 
+                                              (suit first-card)))
+                          t)
+                    (t nil))
+            ))
+    ))
+@
+
+As a convenience, we will define a function determining whether or not
+a trump has been played in a list of cards. This function will be
+entitled +contains-trump?+. A trump card in Sheepshead is defined as a
+card that is one or more of the following:
+
+. A Jack.
+. A Queen.
+. A Diamond.
+
+Thus, we can define +trump?+:
+
+[source,lisp]
+<<core.lisp>>=
+(defun trump? (card)
+    (or (eq (suit card) :diamonds)
+        (>= (rank card) 13)))
+@
+
+The second clause is readily explained in section 1.1. With this in
+hand, we can define +contains-trump?+:
+
+[source,lisp]
+<<core.lisp>>=
+(defun contains-trump? (cards)
+    (reduce #'(lambda (x y) (and x y))
+        cards :initial-value t))
+@
+
+It is also important to decide whether or not a given card is valid.
+TODO
+
+. Select the set. If we are talking about clubs played, where clubs is
+the leading suit without trumps, then clubs. If trump, then trump.
+. Find the maximum card in that set.
+. Compare its rank to the rank of +new-card+.
+
+[source,lisp]
+<<core.lisp>>=
+(defun max-card-in-set (cards discriminator)
+    (let ((filter-fn (if (eq discriminator :trump)
+                        (lambda (x) (or (eq (suit x) :diamond)
+                                        (>= (rank x) 12)))
+                        (lambda (x) (eq (suit x) discriminator))
+                        )))
+        (reduce #'max
+            (mapcar #'rank 
+                (remove-if #'(lambda (x) (not (funcall filter-fn x)))
+                           cards))
+            :initial-value 0)
+    ))
 @
 
 ==== The Deal ====
@@ -525,8 +696,9 @@ package should be straightforward.
 [source,lisp]
 <<sheepshead.asd>>=
 (defpackage #:sheepshead
-    (:export game player human-player card hand name
+    (:export game player human-player card hand name players
              play-callback bury-callback blind-callback bot-player
+             play-game
              +VERSION+ +MINPLAYERS+ +MAXPLAYERS+
              valid-player-count?)
     (:use :cl :asdf))
@@ -693,13 +865,36 @@ method, +print-hand+ which, as it implies, will print out every
         ))
 @
 
+The next function is a simple one that prompts the player for whether
+or not they would like to take the blind.
+
 [source,lisp]
 <<utility functions>>=
 (defun blind-prompt (player)
     (print-hand player)
-    (get-string (format nil "~%~A: Would you like to take the blind? ")
-    )
+    (get-string (format nil 
+                        "~%~A: Would you like to take the blind? "
+                        (sheepshead:name player))))
 @
+
+[source,lisp]
+<<utility functions>>=
+(defun bury-prompt (player)
+    (print-hand player))
+@
+
+==== A Hand ====
+
+The next step, after setting up all of the basics, is to go ahead and
+start the game.
+
+<<turn control over to game>>=
+(sheepshead:play-game game)
+@
+
+As we have seen previously, this does little more than start up a loop
+of playing hands until the requisite number of points have been
+scored.
 
 ==== Packaging ====
 
