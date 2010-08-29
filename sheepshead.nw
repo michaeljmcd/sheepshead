@@ -169,9 +169,10 @@ With a shuffled pack of cards, the next step is to deal. To deal, we
 need to have a game on, and to have a digital game on, we need to
 model the game. So, let us do that.
 
-Any player, regardless of whether they are human or AI controlled will
-have a name, a hand, and a score (the game's running score, not the
-points scored in a single hand).
+Any player, regardless of whether they are human or AI controlled will have
+a name, a hand, a flag indicating whether or not that player is currently
+the dealer, and a score (the game's running score, not the points scored in
+a single hand).
 
 [source,lisp]
 <<core.lisp>>=
