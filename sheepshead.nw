@@ -27,7 +27,7 @@ properties:
 . The rules I grew up with (more on this later).
 . Platform independence. At the very least, Windows and Linux. If a
 Mac owner comes along, I would love to test for that platform as well.
-. Core/UI separation. Eventually, multiple front ends would be ince.
+. Core/UI separation. Eventually, multiple front ends would be nice.
 In the immediacy, a simple Q/A-like console version will suffice.
 . AI players.
 
@@ -147,7 +147,7 @@ From the above source, the pseudocode is:
 
 Our function will operate on an array, for efficiency's sake.
 Accessing an array, in lisp, is constant time, but accessing the Nth
-element of a list is O(n) time. So, to implmenet the above algorithm:
+element of a list is O(n) time. So, to implement the above algorithm:
 
 [source,lisp]
 <<core.lisp>>=
@@ -197,6 +197,17 @@ using the proper algorithm.
 (defgeneric bury (player blind))
 @
 
+Each of these three methods is expected to return the necessary value.
+So, for example, +play-card+ is expected to return the card from the
+player's hand that will be played, but it must _not_ have any other
+side effects on the user.
+
+Similarly, +take-blind?+ is a predicate and should return +t+ if the
+user wishes to take the blind, +nil+ otherwise.
+
+Finally, +bury+ should return the player's new hand and list of card
+objects to be buried.
+
 ==== Human Controlled ====
 
 A human controlled player will be like the basic one above in all
@@ -214,13 +225,13 @@ when +play-card+ is called.
      ))
 
 (defmethod play-card ((player human-player) trick)
-    (funcall (play-callback player) trick))
+    (funcall (play-callback player) player trick))
 
 (defmethod take-blind? ((player human-player))
     (funcall (blind-callback player) player))
 
 (defmethod bury ((player human-player) blind)
-    (funcall (bury-callback player) blind))
+    (funcall (bury-callback player) player blind))
 @
 
 ==== Bots ====
@@ -233,12 +244,56 @@ making deductions. Later on, I would like to program an AI that takes
 advantage of information has it is revealed during the course of the
 game--perhaps even tracking the other players' tendencies. 
 
-For now, we are going to keep this very simple.
+In the future, I am thinking about building a genetic algorithm
+generator to come up with an extremely high-quality AI. For now, we
+are going to keep this very simple, by building a simple, rule-based
+AI system.
+
+===== Simple (Rule Based) =====
+
+First, we will declare the class.
 
 [source,lisp]
 <<core.lisp>>=
-(defclass bot-player (player) ())
+(defclass simple-bot-player (player) ())
 @
+
+Next, there is the ruleset that will govern the bot's play.
+sheepshead.org has a list of strategies
+footnote:[http://www.sheepshead.org/advanced.cfm]. These seem to be a
+good place to start for the decision making process, but first we must
+layout what decisions the bot will be responsible.
+
+. Whether or not to take the blind.
+. What card to play in a trick.
+.. When leading.
+.. When not leading.
+
+Taking the Blind
+~~~~~~~~~~~~~~~~
+
+The first question is, of course, one of the hardest in the entire
+game. Not seeing any quick and ready ideas, I will ad-lib this
+algorithm:
+
+. Take the number of Queens and multiply it by twenty.
+. Take the number of Jacks and multiply it by ten.
+. Add five points for every other trump.
+. Add one point for every non-trump Ace.
+
+If this number is greater than 100, take the blind. Another hint on
+wikipedia footnote:[http://en.wikipedia.org/wiki/Sheepshead] is that
+some players recommend taking the blind in five player play if the
+total number of trumps (of any rank) is greater than or equal to four.
+We will also apply this rule.
+
+The method +take-blind?+ 
+
+Playing Tricks
+~~~~~~~~~~~~~~
+
+For 2A, we will adapt the rules at the link above to sheepshead.org.
+We will lead with
 
 === Games ===
 
@@ -359,7 +414,7 @@ lay this out as follows:
 
 [source,lisp]
 <<core.lisp>>=
-(defun play-tricks (players &key (leaster nil))
+(defun play-tricks (players)
     (loop for index from 0 to (hand-size (length players))
           do (play-trick players nil nil)))
 @
@@ -697,8 +752,8 @@ package should be straightforward.
 <<sheepshead.asd>>=
 (defpackage #:sheepshead
     (:export game player human-player card hand name players
-             play-callback bury-callback blind-callback bot-player
-             play-game
+             play-callback bury-callback blind-callback simple-bot-player
+             play-game blind-size do-if-player-count-valid
              +VERSION+ +MINPLAYERS+ +MAXPLAYERS+
              valid-player-count?)
     (:use :cl :asdf))
@@ -787,16 +842,16 @@ are name and human vs. CPU control).
                 (1 (let ((player (make-instance 'sheepshead:human-player :name player-name)))
                         <<wire up callbacks>>
                         (push player player-list)))
-                (2 (let ((player (make-instance 'sheepshead:bot-player :name player-name)))
+                (2 (let ((player (make-instance 'sheepshead:simple-bot-player :name player-name)))
                         (push player player-list)))
              )))
     (setf (sheepshead:players game) player-list))
 @
 
 <<wire up callbacks>>=
-;(setf (sheepshead:play-callback player) #'play-prompt)
+(setf (sheepshead:play-callback player) #'play-prompt)
 (setf (sheepshead:bury-callback player) #'bury-prompt)
-;(setf (sheepshead:blind-callback player) #'blind-prompt)
+(setf (sheepshead:blind-callback player) #'blind-prompt)
 @
 
 The function +get-integer+ is separated out to keep the code nice and neat.
@@ -829,6 +884,28 @@ provided and returns +nil+, the prompt will be made again.
     ))
 @
 
+Sometimes, we will want to get a simple yes or no. Along those lines,
+we will build a simple function to prompt for it.
+
+[source,lisp]
+<<utility functions>>=
+(defun get-boolean (prompt)
+    (flet ((valid-input (input)
+             (member-if #'(lambda (x) (equal x (string-downcase input))) 
+                        '("y" "yes" "n" "no"))))
+        (let ((input ""))
+                (loop while (not (valid-input input))
+                    do
+                    (format *standard-output* prompt)
+                    (force-output *standard-output*)
+                    (setf input (string-downcase (read-line *standard-input*))))
+                (if (or (equal input "y")
+                        (equal input "yes"))
+                    t
+                    nil))
+    ))
+@
+
 The next function is a convenience, to keep the initial set up code
 clean. It displays a prompt, reads a string and returns it.
 
@@ -858,34 +935,63 @@ string named +get-string+.
 ==== Event Handlers ====
 
 To display a player's full hand, we will duck tape in an additional
-method, +print-hand+ which, as it implies, will print out every 
+method, +print-hand+ which, as it implies, will print out every card
+in the player's hand.
+
+We will also want to print hands that are not necessarily contained in
+a +player+ object, so we will generalize this as follows:
 
 [source,lisp]
 <<utility functions>>=
 (defmethod print-hand ((player sheepshead:player))
+    (print-cards (sheepshead:hand player)))
+
+(defmethod print-hand ((cards list))
+    (print-cards (coerce cards 'vector)))
+
+(defmethod print-hand ((cards vector))
+    (print-cards cards))
+
+(defun print-cards (cards)
     (let ((output-stream (make-string-output-stream)))
-        (loop for card across (sheepshead:hand player)
-            do (format output-stream " ~A " card))
-        (get-output-stream-string output-stream)
-        ))
+            (loop for card across cards
+                do (format output-stream " [~A] " card))
+            (format *standard-output* "~%~A" (get-output-stream-string output-stream))
+            ))
 @
 
-The next function is a simple one that prompts the player for whether
-or not they would like to take the blind.
+The next few functions, mentioned above, are simple prompts for the
+human controlled players.
 
 [source,lisp]
 <<utility functions>>=
 (defun blind-prompt (player)
     (print-hand player)
-    (get-string (format nil 
+    (get-boolean (format nil 
                         "~%~A: Would you like to take the blind? "
                         (sheepshead:name player))))
-@
 
-[source,lisp]
-<<utility functions>>=
-(defun bury-prompt (player)
-    (print-hand player))
+(defun play-prompt (player trick)
+    (print-hand player)
+    (format t "~%Trick so far: ")
+    (print-hand trick)
+    (let ((card-index (get-integer (format nil "~%~A: Which card would you like to play? " (sheepshead:name player)))))
+        (nth card-index (sheepshead:hand player))
+        ))
+
+(defun bury-prompt (player blind)
+    (let ((blind-size (length blind))
+          (buried-cards nil)
+          (all-cards (concatenate 'list (sheepshead:hand player) blind)))
+        (loop for index from 0 to (1- blind-size)
+            do
+            (print-hand all-cards)
+            (let ((card-index (get-integer (format nil "~%~A: Which card would you like to bury? " (sheepshead:name player)))))
+                (push (nth card-index all-cards) buried-cards)
+                (setf all-cards (remove (nth card-index all-cards) all-cards))
+            ))
+        (values all-cards buried-cards)
+    ))
 @
 
 ==== A Hand ====
@@ -893,6 +999,7 @@ or not they would like to take the blind.
 The next step, after setting up all of the basics, is to go ahead and
 start the game.
 
+[source,lisp]
 <<turn control over to game>>=
 (sheepshead:play-game game)
 @
