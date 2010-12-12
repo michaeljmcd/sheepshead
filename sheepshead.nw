@@ -122,14 +122,13 @@ cards in the range 7-14.
 [source,lisp]
 <<core.lisp>>=
 (defmethod generate-deck ()
-    (let ((deck (make-array (list +DECKSIZE+) 
-                            :fill-pointer +DECKSIZE+))
+    (let ((deck (make-list +DECKSIZE+ :initial-element nil))
           (index 0))
         (dolist (suit '(:clubs :spades :hearts :diamonds))
             (loop for rank from +LOWCARD+ upto +HIGHCARD+
                 do 
-                (setf (aref deck index) (make-instance 'card :rank rank :suit suit))
-                (setf index (+ index 1))
+                (setf (nth index deck) (make-instance 'card :rank rank :suit suit))
+                (setf index (1+ index))
                 ))
          deck
     ))
@@ -151,13 +150,13 @@ element of a list is O(n) time. So, to implement the above algorithm:
 
 [source,lisp]
 <<core.lisp>>=
-(defmethod shuffle-deck ((deck array))
-    (loop for index from (- +DECKSIZE+ 1) downto 1
+(defmethod shuffle-deck ((deck list))
+    (loop for index from (1- +DECKSIZE+) downto 1
         do
             (let* ((random-index (random index))
-                   (temp (aref deck random-index)))
-                (setf (aref deck random-index) (aref deck index))
-                (setf (aref deck index) temp)
+                   (temp (nth random-index deck)))
+                (setf (nth random-index deck) (nth index deck))
+                (setf (nth index deck) temp)
                 ))
      deck)
 @
@@ -569,7 +568,7 @@ things:
 
 . Shuffle the deck.
 
-. Initialize each player's hand to be an empty array of the proper
+. Initialize each player's hand to be an empty list of the proper
 size.
 
 . Deal all of the cards out to the players and blind.
@@ -583,20 +582,16 @@ modified during the function call.
 <<core.lisp>>=
 (defun deal-hands (players)
     (let ((deck (shuffle-deck (generate-deck)))
-          (blind (make-array (list (blind-size (length players)))
-                             :fill-pointer 0))
+          (blind nil)
           (hand-size (hand-size (length players)))
           (blind-size (blind-size (length players))))
         (dolist (player players)
-            (setf (hand player) 
-                  (make-array (list hand-size)
-                              :fill-pointer 0)
-                  ))
+            (setf (hand player) nil))
         (dotimes (index hand-size)
-            (unless (>= (fill-pointer blind) blind-size)
-                (vector-push (vector-pop deck) blind))
+            (unless (>= (length blind) blind-size)
+                (push (pop deck) blind))
             (dolist (player players)
-                (vector-push (vector-pop deck) (hand player))
+                (push (pop deck) (hand player))
                 ))
         blind
         ))
@@ -947,14 +942,14 @@ a +player+ object, so we will generalize this as follows:
     (print-cards (sheepshead:hand player)))
 
 (defmethod print-hand ((cards list))
-    (print-cards (coerce cards 'vector)))
+    (print-cards cards))
 
 (defmethod print-hand ((cards vector))
     (print-cards cards))
 
 (defun print-cards (cards)
     (let ((output-stream (make-string-output-stream)))
-            (loop for card across cards
+            (loop for card across (coerce cards 'vector)
                 do (format output-stream " [~A] " card))
             (format *standard-output* "~%~A" (get-output-stream-string output-stream))
             ))
