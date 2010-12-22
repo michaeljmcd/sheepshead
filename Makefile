@@ -17,3 +17,6 @@ sheepshead.txt: sheepshead.nw
 
 html: sheepshead.txt
 	asciidoc -a toc -d book -b xhtml11 sheepshead.txt
+
+pdf: sheepshead.txt
+	a2x -a toc -d book -f pdf sheepshead.txt

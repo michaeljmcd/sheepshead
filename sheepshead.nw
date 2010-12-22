@@ -53,9 +53,14 @@ digitally or physically. The deck in Sheepshead is A-7 (i.e. 2-6s are
 discarded) of each suit (assuming a French deck: clubs, spades,
 hearts, and diamonds).
 
+To ensure that the macro definitions predate any usage for them, we
+will place them immediately after the the +in-package+ statement.
+
 [source,lisp]
 <<core.lisp>>=
 (in-package :sheepshead)
+
+<<core macros>>
 
 (defconstant +LOWCARD+ 7)
 (defconstant +HIGHCARD+ 14)
@@ -344,7 +349,7 @@ preplanned end, even though all good things must come to an end.
 [source,lisp]
 <<core.lisp>>=
 (defmethod play-game ((game game))
-    (do-if-player-count-valid (length (players game))
+    (when-player-count (length (players game))
         (do ()
             ((game-over? game))
             (play-hand game))))
@@ -671,7 +676,7 @@ provided is invalid. In this case, we signal an error.
 [source,lisp]
 <<core.lisp>>=
 (defun blind-size (player-count)
-    (do-if-player-count-valid player-count
+    (when-player-count player-count
         (case player-count
             (3 2)
             (4 4)
@@ -685,7 +690,7 @@ integer parameter indicating the number of players.
 [source,lisp]
 <<core.lisp>>=
 (defun hand-size (player-count)
-    (do-if-player-count-valid player-count
+    (when-player-count player-count
         (case player-count
             (3 10)
             (4 7)
@@ -700,8 +705,8 @@ end. Because we use this several times, we will wrap it up in a nice
 little macro.
 
 [source,lisp]
-<<core.lisp>>=
-(defmacro do-if-player-count-valid (count &body body)
+<<core macros>>=
+(defmacro when-player-count (count &body body)
     `(if (valid-player-count? ,count)
         (progn ,@body)
         (error "There must be 3-5 players. ~A provided." ,count)
@@ -748,7 +753,7 @@ package should be straightforward.
 (defpackage #:sheepshead
     (:export game player human-player card hand name players
              play-callback bury-callback blind-callback simple-bot-player
-             play-game blind-size do-if-player-count-valid
+             play-game blind-size when-player-count
              +VERSION+ +MINPLAYERS+ +MAXPLAYERS+
              valid-player-count?)
     (:use :cl :asdf))
@@ -828,7 +833,7 @@ are name and human vs. CPU control).
 
 [source,lisp]
 <<initialize players>>=
-(let* ((player-count (get-integer "~&Please enter the number of players (3-5): " :test-fn #'sheepshead::valid-player-count?))
+(let* ((player-count (get-integer "~&Please enter the number of players (3-5): " :test-fn #'sheepshead:valid-player-count?))
        (player-list nil))
     (dotimes (index player-count)
         (let ((control-choice (get-integer (format nil "~%Should player ~A be: ~%1.  Human-controlled~%2.  AI~%> " (1+ index)) :test-fn #'(lambda (x) (and (>= x 1) (<= x 2)))))
@@ -939,18 +944,21 @@ a +player+ object, so we will generalize this as follows:
 [source,lisp]
 <<utility functions>>=
 (defmethod print-hand ((player sheepshead:player))
-    (print-cards (sheepshead:hand player)))
+    (print-cards (sheepshead:hand player) :show-index t))
 
 (defmethod print-hand ((cards list))
-    (print-cards cards))
+    (print-cards cards :show-index t))
 
-(defmethod print-hand ((cards vector))
-    (print-cards cards))
-
-(defun print-cards (cards)
+(defun print-cards (cards &key (show-index nil))
     (let ((output-stream (make-string-output-stream)))
-            (loop for card across (coerce cards 'vector)
-                do (format output-stream " [~A] " card))
+            (format output-stream "{")
+            (loop for card in cards 
+                  for index = 0 then (1+ index)
+                do 
+                (if show-index
+                    (format output-stream " ~A:~A " index card)
+                    (format output-stream " ~A " card)))
+            (format output-stream "}")
             (format *standard-output* "~%~A" (get-output-stream-string output-stream))
             ))
 @
