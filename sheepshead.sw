@@ -1,9 +1,8 @@
-Sheepshead - A Card Game
-========================
-Michael McDermott <mmcdermott@mad-computer-scientist.com>
+@doc Sheepshead - A Card Game [out=docs/sheepshead.md]
+% Sheepshead - A Card Game
+% Michael McDermott
 
-Introduction
-------------
+## Introduction ##
 
 Sheepshead is a German-American game played mostly in Wisconsin and
 Minnesota. Outside of this geographic region, few people seem to
@@ -24,28 +23,26 @@ options are:
 Our objectives are to create a Sheepshead game with the following
 properties:
 
-. The rules I grew up with (more on this later).
-. Platform independence. At the very least, Windows and Linux. If a
+(#) The rules I grew up with (more on this later).
+(#) Platform independence. At the very least, Windows and Linux. If a
 Mac owner comes along, I would love to test for that platform as well.
-. Core/UI separation. Eventually, multiple front ends would be nice.
+(#) Core/UI separation. Eventually, multiple front ends would be nice.
 In the immediacy, a simple Q/A-like console version will suffice.
-. AI players.
+(#) AI players.
 
 This really does not seem like too much to ask for.
 
-The rules we will be implementing can be found at Pagat
-footnote:[http://www.pagat.com/schafk/shep.html]. The only major
+The rules we will be implementing can be found at [Pagat](http://www.pagat.com/schafk/shep.html).
+The only major
 caveat is that we will be implementing the Jack of Diamonds variant.
 
-Core
-----
+## Core ##
 
 This is where we model the basic elements of the game, including the
 game itself. The interface should do little more than advance and
 display the game in its own fashion. 
 
-A Nice Game of Cards
-~~~~~~~~~~~~~~~~~~~~
+### A Nice Game of Cards ###
 
 We will start at the bottom and build up. What is the most fundamental
 thing in a card game? The cards. You cannot play without them, either
@@ -54,13 +51,12 @@ discarded) of each suit (assuming a French deck: clubs, spades,
 hearts, and diamonds).
 
 To ensure that the macro definitions predate any usage for them, we
-will place them immediately after the the +in-package+ statement.
+will place them immediately after the the `in-package` statement.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures [out=src/core.lisp,lang=commonlisp]
 (in-package :sheepshead)
 
-<<core macros>>
+@<core macros>
 
 (defconstant +LOWCARD+ 7)
 (defconstant +HIGHCARD+ 14)
@@ -72,39 +68,38 @@ will place them immediately after the the +in-package+ statement.
 (defclass card ()
     ((rank :accessor rank :initarg :rank)
      (suit :accessor suit :initarg :suit)))
-@
+@=
 
-Suits are assumed to be members of +'(:clubs :spades :hearts
-:diamonds)+.
+Suits are assumed to be members of `'(:clubs :spades :hearts
+:diamonds)`.
 Rank must be between 7 and 14, inclusive. The card
 corresponding to each number will start at 7 and follow the Germanic
 ordering that Sheepshead uses. So, the following numbers would
 correspond to the following cards:
 
-.Card constants
-|==============================
-|Constant | Card
-|7        | 7
-|8        | 8
-|9        | 9
-|10       | King
-|11       | 10
-|12       | Ace
-|13       | Jack
-|14       | Queen
-|==============================
+**Card constants**
+
+Constant    Card
+--------    ------
+7           7
+8           8
+9           9
+10          King
+11          10
+12          Ace
+13          Jack
+14          Queen
 
 The ordering may seem a little strange, but it should make sense with
 knowledge of the rules because it allows rank comparison to be done
-purely as +rank1 > rank2+. 
+purely as `rank1 > rank2`. 
 
-We will add an implementation of +print-object+ (See section 28.2 of
+We will add an implementation of `print-object` (See section 28.2 of
 Common Lisp the Language; the equivalent of overriding C#'s ToString()
 method). Clearly, this will not suffice for the UI, but it will make
 things much, much easier when debugging interactively.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures [lang=commonlisp]
 (defmethod print-object ((card card) stream)
     (let ((name (case (rank card)
                     (7 "7")
@@ -116,7 +111,7 @@ things much, much easier when debugging interactively.
                     (13 "JACK")
                     (14 "QUEEN"))))
     (format stream "[~A OF ~A]" name (suit card))))
-@
+@=
 
 This is little better than a C-struct in its current form. We have not
 even bound the members. That is all right though. We will write a
@@ -124,8 +119,7 @@ function to generate a Sheepshead deck. The method used will be
 extremely straightforward. For each suit, we will generate each of the
 cards in the range 7-14. 
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defmethod generate-deck ()
     (let ((deck (make-list +DECKSIZE+ :initial-element nil))
           (index 0))
@@ -137,11 +131,10 @@ cards in the range 7-14.
                 ))
          deck
     ))
-@
+@=
 
 We will provide another function, this one to shuffle the deck. The
-algorithm used will be the Fisher-Yates Algorithm
-footnote:[http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle].
+algorithm used will be the [Fisher-Yates Algorithm](http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle).
 From the above source, the pseudocode is:
 
     To shuffle an array a of n elements:
@@ -153,8 +146,7 @@ Our function will operate on an array, for efficiency's sake.
 Accessing an array, in lisp, is constant time, but accessing the Nth
 element of a list is O(n) time. So, to implement the above algorithm:
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defmethod shuffle-deck ((deck list))
     (loop for index from (1- +DECKSIZE+) downto 1
         do
@@ -164,10 +156,9 @@ element of a list is O(n) time. So, to implement the above algorithm:
                 (setf (nth index deck) temp)
                 ))
      deck)
-@
+@=
 
-Players
-~~~~~~~
+### Players ###
 
 With a shuffled pack of cards, the next step is to deal. To deal, we
 need to have a game on, and to have a digital game on, we need to
@@ -178,15 +169,14 @@ a name, a hand, a flag indicating whether or not that player is currently
 the dealer, and a score (the game's running score, not the points scored in
 a single hand).
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defclass player ()
     ((name :accessor name :initarg :name :initform "Foo")
      (hand :accessor hand :initarg :hand :initform nil)
      (dealer? :accessor dealer? :initarg :dealer? :initform nil)
      (score :accessor score :initarg :score :initform 0)
     ))
-@
+@=
 
 Another basic is that all players must be able to return their card
 selection for a given trick. While this function must be present, the
@@ -194,34 +184,32 @@ method chosen to pick the card will differ. For a player, the card
 must be selected through the UI. For a bot, the card must be picked
 using the proper algorithm.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defgeneric play-card (player trick))
 (defgeneric take-blind? (player))
 (defgeneric bury (player blind))
-@
+@=
 
 Each of these three methods is expected to return the necessary value.
-So, for example, +play-card+ is expected to return the card from the
+So, for example, `play-card` is expected to return the card from the
 player's hand that will be played, but it must _not_ have any other
 side effects on the user.
 
-Similarly, +take-blind?+ is a predicate and should return +t+ if the
-user wishes to take the blind, +nil+ otherwise.
+Similarly, `take-blind?` is a predicate and should return `t` if the
+user wishes to take the blind, `nil` otherwise.
 
-Finally, +bury+ should return the player's new hand and list of card
+Finally, `bury` should return the player's new hand and list of card
 objects to be buried.
 
-==== Human Controlled ====
+#### Human Controlled ####
 
 A human controlled player will be like the basic one above in all
-respects, save one. Namely, that its +play-card+ implementation must
+respects, save one. Namely, that its `play-card` implementation must
 get an answer from the UI. The easiest way to do this without tying
 ourselves to any one is to provide a callback as a slot, and call it
-when +play-card+ is called.
+when `play-card` is called.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defclass human-player (player)
     ((play-callback :accessor play-callback :initarg play-callback)
      (blind-callback :accessor blind-callback :initarg blind-callback)
@@ -236,9 +224,9 @@ when +play-card+ is called.
 
 (defmethod bury ((player human-player) blind)
     (funcall (bury-callback player) player blind))
-@
+@=
 
-==== Bots ====
+#### Bots ####
 
 This is the problem with trying to write an artificial intelligence
 for a game I've played almost as long as I can remember: I don't
@@ -253,14 +241,13 @@ generator to come up with an extremely high-quality AI. For now, we
 are going to keep this very simple, by building a simple, rule-based
 AI system.
 
-===== Simple (Rule Based) =====
+#### Simple (Rule Based) ####
 
 First, we will declare the class.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defclass simple-bot-player (player) ())
-@
+@=
 
 Next, there is the ruleset that will govern the bot's play.
 sheepshead.org has a list of strategies
@@ -273,59 +260,56 @@ layout what decisions the bot will be responsible.
 .. When leading.
 .. When not leading.
 
-Taking the Blind
-~~~~~~~~~~~~~~~~
+##### Taking the Blind #####
 
 The first question is, of course, one of the hardest in the entire
 game. Not seeing any quick and ready ideas, I will ad-lib this
 algorithm:
 
-. Take the number of Queens and multiply it by twenty.
-. Take the number of Jacks and multiply it by ten.
-. Add five points for every other trump.
-. Add one point for every non-trump Ace.
+1. Take the number of Queens and multiply it by twenty.
+1. Take the number of Jacks and multiply it by ten.
+1. Add five points for every other trump.
+1. Add one point for every non-trump Ace.
 
 If this number is greater than 100, take the blind. Another hint on
-wikipedia footnote:[http://en.wikipedia.org/wiki/Sheepshead] is that
+[wikipedia](http://en.wikipedia.org/wiki/Sheepshead) is that
 some players recommend taking the blind in five player play if the
 total number of trumps (of any rank) is greater than or equal to four.
 We will also apply this rule.
 
-The method +take-blind?+ 
+The method `take-blind?` 
 
-Playing Tricks
-~~~~~~~~~~~~~~
+#### Playing Tricks ####
 
 For 2A, we will adapt the rules at the link above to sheepshead.org.
 We will lead with
 
-=== Games ===
+#### Games ####
 
 We have cards and players. It is time to put it all together and play
 a game. Sheepshead game goes through the following phases:
 
-. Play a hand:
-.. Pass deal to the left.
-.. The cards are dealt to each player.
-.. Starting at the dealer's left, each player is given the chance to
+(#)   Play a hand:
+    (#)  Pass deal to the left.
+    (#)  The cards are dealt to each player.
+    (#)  Starting at the dealer's left, each player is given the chance to
 take the blind.
-.. If a player takes the blind, he may bury a number of cards
+    (#)  If a player takes the blind, he may bury a number of cards
 equivalent to the size of the blind..
-.. Tricks begin. The first trick is opened by the player to the
+    (#)  Tricks begin. The first trick is opened by the player to the
 dealer's left.
-.. Once all tricks have been played, the number of points is tallied
+    (#)  Once all tricks have been played, the number of points is tallied
 for each team.
-. If the provided number of game points has not been reached, go to
+(#)  If the provided number of game points has not been reached, go to
 step #1.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defclass game ()
     ((players :initarg :players :accessor players :initform nil)
      (goal-points :initarg :goal-points :accessor goal-points :initform 0)
      (hands :initarg :hands :accessor hands :initform nil)
      ))
-@
+@=
 
 A game, then, can be simulated with a very simple method. We will
 first check the number of players. While some people claim that you
@@ -336,9 +320,9 @@ variant when five are playing.
 
 The top level game, then, will follow this basic format:
 
-. Verify that the number of players provided is accurate.
-. Play a hand.
-. Compare scores. If the game is over, return the winning player. If
+(#)  Verify that the number of players provided is accurate.
+(#)  Play a hand.
+(#)  Compare scores. If the game is over, return the winning player. If
 not, go back to #1.
 
 Items 2-3 of the above list find their implementation here. Pretty
@@ -346,23 +330,21 @@ much, we indefinitely play hands until the game's target has been
 reached. A target number of points of 0 indicates that the game has no
 preplanned end, even though all good things must come to an end. 
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defmethod play-game ((game game))
     (when-player-count (length (players game))
         (do ()
             ((game-over? game))
             (play-hand game))))
-@
+@=
 
 We noted the conditions for a game's ending above. A succinct way of
 stating the requirement is that if the target number of points for the
 game is not 0 (i.e. the game is infinite) and at least one player has
 as many or more points than the target, the game is over. We express
-this succinctly in the method +game-over?+.
+this succinctly in the method `game-over?`.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defmethod game-over? ((game game))
     (if (eq (goal-points game) 0)
         nil
@@ -372,17 +354,16 @@ this succinctly in the method +game-over?+.
                         (players game))
                 :initial-value nil)
     ))
-@
+@=
 
 The basic structure of a game is now intact. The next step is to
 implement the various stages pursuant of playing a hand in the
-imaginatively named method +play-hand+.
+imaginatively named method `play-hand`.
 
 First, we deal the cards and find out who (if anyone) will take the
 blind. Then, we begin the main loop.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defmethod play-hand ((game game))
     (setf (players game) (rotate-left (players game)))
     (setf (dealer? (first (players game))) t)
@@ -392,22 +373,22 @@ blind. Then, we begin the main loop.
             (unless (null taker)
                 (bury taker blind)))
     (play-tricks (reverse (players game))))
-@
+@=
 
 The next thing to do is deal with trick-playing. Let's begin by laying
 out the properties of this:
 
-. We have to continue until there are no cards in any player's hand.
-. The number of rounds will be equal to the number of cards in a given
+1. We have to continue until there are no cards in any player's hand.
+1. The number of rounds will be equal to the number of cards in a given
 player's hand.
-. The ranking of cards is affected by the first card played (i.e.
+1. The ranking of cards is affected by the first card played (i.e.
 which suit is lead), so that information will have to be maintained.
-. The player to win a given trick +n+ starts trick +n + 1+ for any
-trick +> 0+.
+1. The player to win a given trick `n` starts trick `n + 1` for any
+trick `> 0`.
 
 For #1, the obvious method is to iterate from 0 to the number of cards
 in a hand. Recursion would work, but is less readable in this instance
-than using Lisp's +loop+ facility.
+than using Lisp's `loop` facility.
 
 For each round, we begin with the first player and prompt each player
 for a card, passing in the set of cards played so far.
@@ -416,17 +397,15 @@ After each player has played, we determine the winner, add the trick
 to their tricks won, and rotate the list of players to match. We can
 lay this out as follows:
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defun play-tricks (players)
     (loop for index from 0 to (hand-size (length players))
           do (play-trick players nil nil)))
-@
+@=
 
-The heart of this function is +play-trick+, so we will define it next.
+The heart of this function is `play-trick`, so we will define it next.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defun play-trick (remaining-players cards winning-player)
     (if (null remaining-players)
         (values (reverse cards) winning-player)
@@ -439,41 +418,41 @@ The heart of this function is +play-trick+, so we will define it next.
                             (cons next-card cards)
                             winning-player))
                             )))
-@
+@=
 
-As we can see, +play-trick+ is a simple recursive function that takes
+As we can see, `play-trick` is a simple recursive function that takes
 a card from each player, then returns the set of cards played in the
 trick and the winning player. The latter is accomplished primarily
-through the use of the function +leading-card?+ which determines if a
+through the use of the function `leading-card?` which determines if a
 new card will be the leading one of those played so far.
 
 We can define the conditions when this will be true as follows:
 
-. It is the first card.
-. It is of the same suit as the first card, but the highest of that
+1. It is the first card.
+1. It is of the same suit as the first card, but the highest of that
 suit to be played so far and no other trump have been played so far.
-. It is a trump card and the highest such card played so far.
+1. It is a trump card and the highest such card played so far.
 
 As a study of contrasts, we can examine the conditions under which the
 result should be false:
 
-. The card is neither trump nor the leading suit.
-. The card is of the leading suit, but less so than another card
+1. The card is neither trump nor the leading suit.
+1. The card is of the leading suit, but less so than another card
 played or a trump card has been played.
-. The card is trump, but of lesser rank than a trump played so far.
+1. The card is trump, but of lesser rank than a trump played so far.
 
-We will entitle the two parameters being passed in +new-card+ and
-+previous-cards+, respectively. Their purposes should be fairly
+We will entitle the two parameters being passed in `new-card` and
+`previous-cards`, respectively. Their purposes should be fairly
 clear. Now, let us define in more concrete terms the method used:
 
-. If +previous-cards+ is +nil+, return true.
-. If a trump card has been played:
-.. and the card is not a trump, return false.
-.. and the card is the highest trump card played, return true.
-. If no trump has been played:
-.. and the card is a trump, return true.
-.. and the card is not of the leading suit, return false.
-.. and the card is of the leading suit, return a simple test.
+1. If `previous-cards` is `nil`, return true.
+1. If a trump card has been played:
+    1. and the card is not a trump, return false.
+    1. and the card is the highest trump card played, return true.
+1. If no trump has been played:
+    1. and the card is a trump, return true.
+    1. and the card is not of the leading suit, return false.
+    1. and the card is of the leading suit, return a simple test.
 
 Most of the items in that list are pretty simple to determine,
 particularly with the utilities that we will see a little bit later,
@@ -484,8 +463,7 @@ card already is. To handle this, we will look at a function later
 that, given a set of cards and a class to look for (a suit or trump),
 will find the highest card of that class in the set.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defun leading-card? (new-card previous-cards)
     (if (null previous-cards)
         t
@@ -508,46 +486,43 @@ will find the highest card of that class in the set.
                     (t nil))
             ))
     ))
-@
+@=
 
 As a convenience, we will define a function determining whether or not
 a trump has been played in a list of cards. This function will be
-entitled +contains-trump?+. A trump card in Sheepshead is defined as a
+entitled `contains-trump?`. A trump card in Sheepshead is defined as a
 card that is one or more of the following:
 
-. A Jack.
-. A Queen.
-. A Diamond.
+1. A Jack.
+1. A Queen.
+1. A Diamond.
 
-Thus, we can define +trump?+:
+Thus, we can define `trump?`:
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defun trump? (card)
     (or (eq (suit card) :diamonds)
         (>= (rank card) 13)))
-@
+@=
 
 The second clause is readily explained in section 1.1. With this in
-hand, we can define +contains-trump?+:
+hand, we can define `contains-trump?`:
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defun contains-trump? (cards)
     (reduce #'(lambda (x y) (and x y))
         cards :initial-value t))
-@
+@=
 
 It is also important to decide whether or not a given card is valid.
 TODO
 
-. Select the set. If we are talking about clubs played, where clubs is
+1. Select the set. If we are talking about clubs played, where clubs is
 the leading suit without trumps, then clubs. If trump, then trump.
-. Find the maximum card in that set.
-. Compare its rank to the rank of +new-card+.
+1. Find the maximum card in that set.
+1. Compare its rank to the rank of `new-card`.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defun max-card-in-set (cards discriminator)
     (let ((filter-fn (if (eq discriminator :trump)
                         (lambda (x) (or (eq (suit x) :diamond)
@@ -560,31 +535,30 @@ the leading suit without trumps, then clubs. If trump, then trump.
                            cards))
             :initial-value 0)
     ))
-@
+@=
 
-==== The Deal ====
+#### The Deal ####
 
-The function +deal-hands+ generates a new deck, shuffles it, and deals
+The function `deal-hands` generates a new deck, shuffles it, and deals
 a hand to each player. It returns the blind and assumes that the first
-player listed is the dealer. +deal-hands+ must do the following
+player listed is the dealer. `deal-hands` must do the following
 things:
 
-. Generate a deck.
+1. Generate a deck.
 
-. Shuffle the deck.
+1. Shuffle the deck.
 
-. Initialize each player's hand to be an empty list of the proper
+1. Initialize each player's hand to be an empty list of the proper
 size.
 
-. Deal all of the cards out to the players and blind.
+1. Deal all of the cards out to the players and blind.
 
-. Return the blind.
+1. Return the blind.
 
 The reason that the players need not be returned is that they will be
 modified during the function call.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defun deal-hands (players)
     (let ((deck (shuffle-deck (generate-deck)))
           (blind nil)
@@ -600,9 +574,9 @@ modified during the function call.
                 ))
         blind
         ))
-@
+@=
 
-==== The Auction ====
+#### The Auction ####
 
 I do not really know that auction is the correct term here. To be
 sure, I do not even know what the correct term might be, but since
@@ -611,17 +585,16 @@ Skat, it seemed as good a choice as any.
 
 The auction, as it is, consists of giving each player the opportunity
 to take the blind, starting with the first player from the dealer's
-left. We will simulate this phase in the function +take-round+. The
+left. We will simulate this phase in the function `take-round`. The
 function itself will not be responsible for determining whether or not
 a given player will take the blind. Rather, this responsibility will
-be delegated to the +take-blind?+ method of the player.
+be delegated to the `take-blind?` method of the player.
 
-If a player takes the blind, their +role+ slot will be updated
+If a player takes the blind, their `role` slot will be updated
 accordingly, and they will be returned. If no one takes the blind,
-+nil+ will be returned.
+`nil` will be returned.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defun take-round (players)
     (if (null players)
         nil
@@ -631,28 +604,28 @@ accordingly, and they will be returned. If no one takes the blind,
                 (take-round (cdr players))
                 ))
     ))
-@
+@=
 
-==== Burying ====
+#### Burying ####
 
 The player who takes the blind may bury two cards (as points) up
 front. As with other decision making processes, the precise method
-used is delegated to the specific subclass of +player+ and its +bury+
+used is delegated to the specific subclass of `player` and its `bury`
 method.
 
-==== Tricks ====
+#### Tricks ####
 
 Once the taking has or has not occurred, the main portion of the game
 starts. The player to the dealer's left leads off the first trick and
 the winner of each trick thereafter begins the next.
 
-==== Scoring ====
+#### Scoring ####
 
 The scoring happens on two levels, each occurring after the end of the
 hand. Those two levels are scoring the hand (and, by extension,
 determining the winner(s)) and scoring the game.
 
-=== Utilities ===
+### Utilities ###
 
 The blind size, as indicated above, varies with the number of players
 in the game. The rule of thumb is that it is the number of cards
@@ -662,19 +635,18 @@ values, it is far easier to drop them somewhere (a function, in this
 case) than it is to manually recalculate them. The table looks like
 this:
 
-.Blind sizes
-|==============
-|Players | Cards in the blind
-|3       | 2
-|4       | 4
-|5       | 2
-|==============
+**Blind sizes**
+
+Players     Cards in the blind
+-------     ------------------
+3           2
+4           4
+5           2
 
 The only other thing to consider is when the number of players
 provided is invalid. In this case, we signal an error.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defun blind-size (player-count)
     (when-player-count player-count
         (case player-count
@@ -682,13 +654,12 @@ provided is invalid. In this case, we signal an error.
             (4 4)
             (5 2))
     ))
-@
+@=
 
-Another comparable function is +hand-size+, which also takes a single
+Another comparable function is `hand-size`, which also takes a single
 integer parameter indicating the number of players.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defun hand-size (player-count)
     (when-player-count player-count
         (case player-count
@@ -696,7 +667,7 @@ integer parameter indicating the number of players.
             (4 7)
             (5 6))
         ))
-@
+@=
 
 In several places, we perform an action only if the number of players
 is accurate. This is done to prevent any strange bugs from either
@@ -704,52 +675,47 @@ conscious manipulation of the gamestate or from errors in the front
 end. Because we use this several times, we will wrap it up in a nice
 little macro.
 
-[source,lisp]
-<<core macros>>=
+@code core macros
 (defmacro when-player-count (count &body body)
     `(if (valid-player-count? ,count)
-        (progn ,@body)
+        (progn ,@@body)
         (error "There must be 3-5 players. ~A provided." ,count)
         ))
-@
+@=
 
 Often, we find ourselves checking the number of players. A quick
-little utility function makes this much easier. +valid-player-count?+
+little utility function makes this much easier. `valid-player-count?`
 ensures that the number passed to it is:
 
-. An integer.
-. Between the minimum number of players (3) and the maximum number of
+1. An integer.
+1. Between the minimum number of players (3) and the maximum number of
 players (5) inclusive.
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defun valid-player-count? (player-count)
     (and (integerp player-count)
          (>= player-count +MINPLAYERS+)
          (<= player-count +MAXPLAYERS+)))
-@
+@=
 
 As seen above, we use rotation a great deal. That is because in a real
 card game, the same things rotate. The definitions are here
 (google-inspired, to be sure):
 
-[source,lisp]
-<<core.lisp>>=
+@code Data Structures
 (defun rotate-left (some-list)
     (concatenate 'list (cdr some-list) (list (car some-list))))
 
 (defun rotate-right (some-list)
     (concatenate 'list (last some-list) (butlast some-list)))
-@
+@=
 
-Packaging
-~~~~~~~~~
+### Packaging ###
 
 Like most Lisp systems, we will pacakge Sheepshead with ASDF. The
 package should be straightforward.
 
-[source,lisp]
-<<sheepshead.asd>>=
+@code Core ASDF Package [out=sheepshead.asd,lang=commonlisp]
 (defpackage #:sheepshead
     (:export game player human-player card hand name players
              play-callback bury-callback blind-callback simple-bot-player
@@ -764,21 +730,19 @@ package should be straightforward.
     :license "BSD"
     :description "Sheepshead"
     :components ((:file "core")))
-@
+@=
 
-Interfaces
-----------
+## Interfaces ##
 
 One of the primary objectives of this package was to allow plug 'n
 play interfaces. So, there is no one single interface--except for now,
 when I will implement only a single interface. The rest are strictly
 TODO.
 
-Console
-~~~~~~~
+### Console ###
 
 The console interface is the simplest possible. It is to be the
-Sheepshead equivalent of what happens when you type +gnuchess+ at the
+Sheepshead equivalent of what happens when you type `gnuchess` at the
 command line. A simple, prompt-based interface. No ncurses, no
 windowing, just a simple print out of game events and prompts for
 input.
@@ -788,51 +752,50 @@ the GUI). In order to prevent unneeded dependencies between them (i.e.
 so that one could install the console version of sheepshead on a
 headless box), we will keep the interface code in separate packages.
 
-==== Initialization ====
+#### Initialization ####
 
-We are going to create a simple +main+ function to kick everything
-off. This will also serve as the entry point for +buildapp+ when we
+We are going to create a simple `main` function to kick everything
+off. This will also serve as the entry point for `buildapp` when we
 create a binary.
 
 The MO for this interface will be to:
 
-. Print a welcome banner.
-. Get player options and initialize the corresponding objects.
-. Set up functions to handle game events.
-. Let the game run itself.
+1. Print a welcome banner.
+1. Get player options and initialize the corresponding objects.
+1. Set up functions to handle game events.
+1. Let the game run itself.
 
 We can then put all of these pieces together, like so:
 
-[source,lisp]
-<<consoleui.lisp>>=
+@code Console UI [out=src/consoleui.lisp,lang=commonlisp]
 (in-package #:sheepshead-consoleui)
 
 (defun main ()
     (let ((game (make-instance 'sheepshead:game)))
-        <<print banner>>
-        <<initialize players>>
-        <<turn control over to game>>
+        @<print banner>
+        @<initialize players>
+        @<turn control over to game>
         ))
 
-<<utility functions>>
-@
+@<utility functions>
+@=
 
 To identify ourselves, we will print a nice little welcome banner. As
 gaudy as you can get in plain text.
 
-[source,lisp]
-<<print banner>>=
-(format *standard-output* "Sheepshead version ~A~%Copyright 2010 by Michael McDermott~%~%" sheepshead:+VERSION+)
-@
+@code print banner
+(format *standard-output*
+    "Sheepshead version ~A~%Copyright 2010 by Michael McDermott~%~%"
+    sheepshead:+VERSION+)
+@=
 
-==== Initialize Players ====
+##### Initialize Players #####
 
 To initialize the players, we need to get the number of players that
 will be playing and set any other options (in this case, those options
 are name and human vs. CPU control).
 
-[source,lisp]
-<<initialize players>>=
+@code initialize players
 (let* ((player-count (get-integer "~&Please enter the number of players (3-5): " :test-fn #'sheepshead:valid-player-count?))
        (player-list nil))
     (dotimes (index player-count)
@@ -846,26 +809,25 @@ are name and human vs. CPU control).
                         (push player player-list)))
              )))
     (setf (sheepshead:players game) player-list))
-@
+@=
 
-<<wire up callbacks>>=
+@code wire up callbacks
 (setf (sheepshead:play-callback player) #'play-prompt)
 (setf (sheepshead:bury-callback player) #'bury-prompt)
 (setf (sheepshead:blind-callback player) #'blind-prompt)
-@
+@=
 
-The function +get-integer+ is separated out to keep the code nice and neat.
+The function `get-integer` is separated out to keep the code nice and neat.
 It doesn't really do anything surprising, just print out a prompt, read in
 the data, and verify that it is valid. If the input read in is not a valid
 integer, the prompt will be repeated until a valid answer is given.
 
-The remaining parameters are key-based, the first one being +test-fn+. This
+The remaining parameters are key-based, the first one being `test-fn`. This
 is a function to determine if the number is valid, for whatever purpose is
-intended. This is as opposed to if it is an integer. If +test-fn+ is
-provided and returns +nil+, the prompt will be made again.
+intended. This is as opposed to if it is an integer. If `test-fn` is
+provided and returns `nil`, the prompt will be made again.
 
-[source,lisp]
-<<utility functions>>=
+@code utility functions
 (defun get-integer (prompt &key (test-fn nil))
     (flet ((valid-input (input) 
                 (let ((parsed-output (parse-integer input :junk-allowed t)))
@@ -882,13 +844,12 @@ provided and returns +nil+, the prompt will be made again.
             (setf input (read-line *standard-input*)))
         (parse-integer input :junk-allowed t))
     ))
-@
+@=
 
 Sometimes, we will want to get a simple yes or no. Along those lines,
 we will build a simple function to prompt for it.
 
-[source,lisp]
-<<utility functions>>=
+@code utility functions
 (defun get-boolean (prompt)
     (flet ((valid-input (input)
              (member-if #'(lambda (x) (equal x (string-downcase input))) 
@@ -904,25 +865,23 @@ we will build a simple function to prompt for it.
                     t
                     nil))
     ))
-@
+@=
 
 The next function is a convenience, to keep the initial set up code
 clean. It displays a prompt, reads a string and returns it.
 
-[source,lisp]
-<<utility functions>>=
+@code utility functions
 (defun get-player-name (player-number)
     (get-string 
         (format nil "~%Enter a name for player #~A " (1+ player-number))
         :default-value (format nil "Player ~A" player-number)))
-@
+@=
 
 The heart of the function is yet another one that we will be using in
 future areas to prompt for input, is a simple little function to get a
-string named +get-string+.
+string named `get-string`.
 
-[source,lisp]
-<<utility functions>>=
+@code utility functions
 (defun get-string (prompt &key (default-value nil))
     (format *standard-output* prompt)
     (let ((input (read-line)))
@@ -930,19 +889,18 @@ string named +get-string+.
             default-value
             input)
         ))
-@
+@=
 
-==== Event Handlers ====
+#### Event Handlers ####
 
 To display a player's full hand, we will duck tape in an additional
-method, +print-hand+ which, as it implies, will print out every card
+method, `print-hand` which, as it implies, will print out every card
 in the player's hand.
 
 We will also want to print hands that are not necessarily contained in
-a +player+ object, so we will generalize this as follows:
+a `player` object, so we will generalize this as follows:
 
-[source,lisp]
-<<utility functions>>=
+@code utility functions
 (defmethod print-hand ((player sheepshead:player))
     (print-cards (sheepshead:hand player) :show-index t))
 
@@ -961,13 +919,12 @@ a +player+ object, so we will generalize this as follows:
             (format output-stream "}")
             (format *standard-output* "~%~A" (get-output-stream-string output-stream))
             ))
-@
+@=
 
 The next few functions, mentioned above, are simple prompts for the
 human controlled players.
 
-[source,lisp]
-<<utility functions>>=
+@code utility functions
 (defun blind-prompt (player)
     (print-hand player)
     (get-boolean (format nil 
@@ -995,29 +952,27 @@ human controlled players.
             ))
         (values all-cards buried-cards)
     ))
-@
+@=
 
-==== A Hand ====
+#### A Hand ####
 
 The next step, after setting up all of the basics, is to go ahead and
 start the game.
 
-[source,lisp]
-<<turn control over to game>>=
+@code turn control over to game
 (sheepshead:play-game game)
-@
+@=
 
 As we have seen previously, this does little more than start up a loop
 of playing hands until the requisite number of points have been
 scored.
 
-==== Packaging ====
+#### Packaging ####
 
 At the moment, the only packaging we are concerned with is an ASDF
 package:
 
-[source,lisp]
-<<sheepshead-consoleui.asd>>=
+@code Console UI ASDF System [out=sheepshead-consoleui.asd,lang=commonlisp]
 (defpackage #:sheepshead-consoleui
     (:use :cl :asdf))
 
@@ -1028,10 +983,9 @@ package:
     :description "A Console UI for Sheepshead"
     :depends-on (:sheepshead)
     :components ((:file "consoleui")))
-@
+@=
 
-License
--------
+## License ##
 
 Sheepshead is licensed under a BSD-style license
 footnote:[http://www.opensource.org/licenses/bsd-license.php]
@@ -1070,10 +1024,8 @@ footnote:[http://www.opensource.org/licenses/bsd-license.php]
     POSSIBILITY OF SUCH DAMAGE.
 
 
-Conclusion
-----------
+## Conclusion ##
 
 In the future, more interfaces would be nice. Especially a graphical one.
 
-Index
------
+## Index ##
