@@ -119,7 +119,7 @@ function to generate a Sheepshead deck. The method used will be
 extremely straightforward. For each suit, we will generate each of the
 cards in the range 7-14. 
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defmethod generate-deck ()
     (let ((deck (make-list +DECKSIZE+ :initial-element nil))
           (index 0))
@@ -146,7 +146,7 @@ Our function will operate on an array, for efficiency's sake.
 Accessing an array, in lisp, is constant time, but accessing the Nth
 element of a list is O(n) time. So, to implement the above algorithm:
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defmethod shuffle-deck ((deck list))
     (loop for index from (1- +DECKSIZE+) downto 1
         do
@@ -169,7 +169,7 @@ a name, a hand, a flag indicating whether or not that player is currently
 the dealer, and a score (the game's running score, not the points scored in
 a single hand).
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defclass player ()
     ((name :accessor name :initarg :name :initform "Foo")
      (hand :accessor hand :initarg :hand :initform nil)
@@ -184,7 +184,7 @@ method chosen to pick the card will differ. For a player, the card
 must be selected through the UI. For a bot, the card must be picked
 using the proper algorithm.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defgeneric play-card (player trick))
 (defgeneric take-blind? (player))
 (defgeneric bury (player blind))
@@ -209,7 +209,7 @@ get an answer from the UI. The easiest way to do this without tying
 ourselves to any one is to provide a callback as a slot, and call it
 when `play-card` is called.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defclass human-player (player)
     ((play-callback :accessor play-callback :initarg play-callback)
      (blind-callback :accessor blind-callback :initarg blind-callback)
@@ -245,7 +245,7 @@ AI system.
 
 First, we will declare the class.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defclass simple-bot-player (player) ())
 @=
 
@@ -255,10 +255,10 @@ footnote:[http://www.sheepshead.org/advanced.cfm]. These seem to be a
 good place to start for the decision making process, but first we must
 layout what decisions the bot will be responsible.
 
-. Whether or not to take the blind.
-. What card to play in a trick.
-.. When leading.
-.. When not leading.
+(#)  Whether or not to take the blind.
+(#)  What card to play in a trick.
+    (#)  When leading.
+    (#)  When not leading.
 
 ##### Taking the Blind #####
 
@@ -303,7 +303,7 @@ for each team.
 (#)  If the provided number of game points has not been reached, go to
 step #1.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defclass game ()
     ((players :initarg :players :accessor players :initform nil)
      (goal-points :initarg :goal-points :accessor goal-points :initform 0)
@@ -330,7 +330,7 @@ much, we indefinitely play hands until the game's target has been
 reached. A target number of points of 0 indicates that the game has no
 preplanned end, even though all good things must come to an end. 
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defmethod play-game ((game game))
     (when-player-count (length (players game))
         (do ()
@@ -344,7 +344,7 @@ game is not 0 (i.e. the game is infinite) and at least one player has
 as many or more points than the target, the game is over. We express
 this succinctly in the method `game-over?`.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defmethod game-over? ((game game))
     (if (eq (goal-points game) 0)
         nil
@@ -363,7 +363,7 @@ imaginatively named method `play-hand`.
 First, we deal the cards and find out who (if anyone) will take the
 blind. Then, we begin the main loop.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defmethod play-hand ((game game))
     (setf (players game) (rotate-left (players game)))
     (setf (dealer? (first (players game))) t)
@@ -397,7 +397,7 @@ After each player has played, we determine the winner, add the trick
 to their tricks won, and rotate the list of players to match. We can
 lay this out as follows:
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defun play-tricks (players)
     (loop for index from 0 to (hand-size (length players))
           do (play-trick players nil nil)))
@@ -405,7 +405,7 @@ lay this out as follows:
 
 The heart of this function is `play-trick`, so we will define it next.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defun play-trick (remaining-players cards winning-player)
     (if (null remaining-players)
         (values (reverse cards) winning-player)
@@ -463,7 +463,7 @@ card already is. To handle this, we will look at a function later
 that, given a set of cards and a class to look for (a suit or trump),
 will find the highest card of that class in the set.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defun leading-card? (new-card previous-cards)
     (if (null previous-cards)
         t
@@ -499,7 +499,7 @@ card that is one or more of the following:
 
 Thus, we can define `trump?`:
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defun trump? (card)
     (or (eq (suit card) :diamonds)
         (>= (rank card) 13)))
@@ -508,7 +508,7 @@ Thus, we can define `trump?`:
 The second clause is readily explained in section 1.1. With this in
 hand, we can define `contains-trump?`:
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defun contains-trump? (cards)
     (reduce #'(lambda (x y) (and x y))
         cards :initial-value t))
@@ -522,7 +522,7 @@ the leading suit without trumps, then clubs. If trump, then trump.
 1. Find the maximum card in that set.
 1. Compare its rank to the rank of `new-card`.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defun max-card-in-set (cards discriminator)
     (let ((filter-fn (if (eq discriminator :trump)
                         (lambda (x) (or (eq (suit x) :diamond)
@@ -558,7 +558,7 @@ size.
 The reason that the players need not be returned is that they will be
 modified during the function call.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defun deal-hands (players)
     (let ((deck (shuffle-deck (generate-deck)))
           (blind nil)
@@ -594,7 +594,7 @@ If a player takes the blind, their `role` slot will be updated
 accordingly, and they will be returned. If no one takes the blind,
 `nil` will be returned.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defun take-round (players)
     (if (null players)
         nil
@@ -646,7 +646,7 @@ Players     Cards in the blind
 The only other thing to consider is when the number of players
 provided is invalid. In this case, we signal an error.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defun blind-size (player-count)
     (when-player-count player-count
         (case player-count
@@ -659,7 +659,7 @@ provided is invalid. In this case, we signal an error.
 Another comparable function is `hand-size`, which also takes a single
 integer parameter indicating the number of players.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defun hand-size (player-count)
     (when-player-count player-count
         (case player-count
@@ -675,7 +675,7 @@ conscious manipulation of the gamestate or from errors in the front
 end. Because we use this several times, we will wrap it up in a nice
 little macro.
 
-@code core macros
+@code core macros [lang=commonlisp]
 (defmacro when-player-count (count &body body)
     `(if (valid-player-count? ,count)
         (progn ,@@body)
@@ -691,7 +691,7 @@ ensures that the number passed to it is:
 1. Between the minimum number of players (3) and the maximum number of
 players (5) inclusive.
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defun valid-player-count? (player-count)
     (and (integerp player-count)
          (>= player-count +MINPLAYERS+)
@@ -702,7 +702,7 @@ As seen above, we use rotation a great deal. That is because in a real
 card game, the same things rotate. The definitions are here
 (google-inspired, to be sure):
 
-@code Data Structures
+@code Data Structures [lang=commonlisp]
 (defun rotate-left (some-list)
     (concatenate 'list (cdr some-list) (list (car some-list))))
 
@@ -784,7 +784,7 @@ We can then put all of these pieces together, like so:
 To identify ourselves, we will print a nice little welcome banner. As
 gaudy as you can get in plain text.
 
-@code print banner
+@code print banner [lang=commonlisp]
 (format *standard-output*
     "Sheepshead version ~A~%Copyright 2010 by Michael McDermott~%~%"
     sheepshead:+VERSION+)
@@ -796,7 +796,7 @@ To initialize the players, we need to get the number of players that
 will be playing and set any other options (in this case, those options
 are name and human vs. CPU control).
 
-@code initialize players
+@code initialize players [lang=commonlisp]
 (let* ((player-count (get-integer "~&Please enter the number of players (3-5): " :test-fn #'sheepshead:valid-player-count?))
        (player-list nil))
     (dotimes (index player-count)
@@ -812,7 +812,7 @@ are name and human vs. CPU control).
     (setf (sheepshead:players game) player-list))
 @=
 
-@code wire up callbacks
+@code wire up callbacks [lang=commonlisp]
 (setf (sheepshead:play-callback player) #'play-prompt)
 (setf (sheepshead:bury-callback player) #'bury-prompt)
 (setf (sheepshead:blind-callback player) #'blind-prompt)
@@ -828,7 +828,7 @@ is a function to determine if the number is valid, for whatever purpose is
 intended. This is as opposed to if it is an integer. If `test-fn` is
 provided and returns `nil`, the prompt will be made again.
 
-@code utility functions
+@code utility functions [lang=commonlisp]
 (defun get-integer (prompt &key (test-fn nil))
     (flet ((valid-input (input) 
                 (let ((parsed-output (parse-integer input :junk-allowed t)))
@@ -850,7 +850,7 @@ provided and returns `nil`, the prompt will be made again.
 Sometimes, we will want to get a simple yes or no. Along those lines,
 we will build a simple function to prompt for it.
 
-@code utility functions
+@code utility functions [lang=commonlisp]
 (defun get-boolean (prompt)
     (flet ((valid-input (input)
              (member-if #'(lambda (x) (equal x (string-downcase input))) 
@@ -871,7 +871,7 @@ we will build a simple function to prompt for it.
 The next function is a convenience, to keep the initial set up code
 clean. It displays a prompt, reads a string and returns it.
 
-@code utility functions
+@code utility functions [lang=commonlisp]
 (defun get-player-name (player-number)
     (get-string 
         (format nil "~%Enter a name for player #~A " (1+ player-number))
@@ -882,7 +882,7 @@ The heart of the function is yet another one that we will be using in
 future areas to prompt for input, is a simple little function to get a
 string named `get-string`.
 
-@code utility functions
+@code utility functions [lang=commonlisp]
 (defun get-string (prompt &key (default-value nil))
     (format *standard-output* prompt)
     (let ((input (read-line)))
@@ -901,7 +901,7 @@ in the player's hand.
 We will also want to print hands that are not necessarily contained in
 a `player` object, so we will generalize this as follows:
 
-@code utility functions
+@code utility functions [lang=commonlisp]
 (defmethod print-hand ((player sheepshead:player))
     (print-cards (sheepshead:hand player) :show-index t))
 
@@ -925,7 +925,7 @@ a `player` object, so we will generalize this as follows:
 The next few functions, mentioned above, are simple prompts for the
 human controlled players.
 
-@code utility functions
+@code utility functions [lang=commonlisp]
 (defun blind-prompt (player)
     (print-hand player)
     (get-boolean (format nil 
@@ -960,7 +960,7 @@ human controlled players.
 The next step, after setting up all of the basics, is to go ahead and
 start the game.
 
-@code turn control over to game
+@code turn control over to game [lang=commonlisp]
 (sheepshead:play-game game)
 @=
 
