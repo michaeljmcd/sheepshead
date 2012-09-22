@@ -725,10 +725,11 @@ package should be straightforward.
     (:use :cl :asdf))
 
 (defsystem sheepshead
-    :version 0.1
+    :version "0.1"
     :author "Michael McDermott"
     :license "BSD"
     :description "Sheepshead"
+    :pathname "src/"
     :components ((:file "core")))
 @=
 
@@ -981,6 +982,7 @@ package:
     :author "Michael McDermott"
     :license "BSD"
     :description "A Console UI for Sheepshead"
+    :pathname "src/"
     :depends-on (:sheepshead)
     :components ((:file "consoleui")))
 @=
