@@ -1,5 +1,5 @@
 @doc Command Line Client[out=docs/02-cli-client.md]
-# Command-Line Client #
+## Command-Line Client ##
 
 The first client will be a simple one, primarily designed to test the
 server's capabilities. In this iteration, the client will accept no
@@ -52,7 +52,7 @@ will need to connect to a server, join, and play games.
                                     the command line shell.
 -----------------------------------------------------------------------
 
-## Startup ##
+### Startup ###
 
 We sketch out our code as follows:
 
@@ -60,10 +60,20 @@ We sketch out our code as follows:
 (in-package :sheepshead-cli-client)
 
 @<Command Lookup Table>
+@<Print banner>
 @<REPL>
 @=
 
-## REPL ##
+To identify ourselves, we will print a nice little welcome banner. As
+gaudy as you can get in plain text.
+
+@code Print banner [lang=commonlisp]
+(format *standard-output*
+    "Sheepshead version ~A~%Copyright 2010 by Michael McDermott~%~%"
+    sheepshead:+VERSION+)
+@=
+
+### REPL ###
 
 Our interface will be fairly standard: 
 
@@ -80,7 +90,83 @@ lead us to some interesting places.
 (defun sheepshead-repl (
 @=
 
-## The Commands ##
+#### Prompt Utilities ####
+
+The function `get-integer` is separated out to keep the code nice and neat.
+It doesn't really do anything surprising, just print out a prompt, read in
+the data, and verify that it is valid. If the input read in is not a valid
+integer, the prompt will be repeated until a valid answer is given.
+
+The remaining parameters are key-based, the first one being `test-fn`. This
+is a function to determine if the number is valid, for whatever purpose is
+intended. This is as opposed to if it is an integer. If `test-fn` is
+provided and returns `nil`, the prompt will be made again.
+
+@code utility functions [lang=commonlisp]
+(defun get-integer (prompt &key (test-fn nil))
+    (flet ((valid-input (input) 
+                (let ((parsed-output (parse-integer input :junk-allowed t)))
+                    (and parsed-output
+                        (or (null test-fn) 
+                            (funcall test-fn parsed-output))))
+
+                ))
+    (let ((input ""))
+        (loop while (not (valid-input input))
+            do
+            (format *standard-output* prompt)
+            (force-output *standard-output*)
+            (setf input (read-line *standard-input*)))
+        (parse-integer input :junk-allowed t))
+    ))
+@=
+
+Sometimes, we will want to get a simple yes or no. Along those lines,
+we will build a simple function to prompt for it.
+
+@code utility functions [lang=commonlisp]
+(defun get-boolean (prompt)
+    (flet ((valid-input (input)
+             (member-if #'(lambda (x) (equal x (string-downcase input))) 
+                        '("y" "yes" "n" "no"))))
+        (let ((input ""))
+                (loop while (not (valid-input input))
+                    do
+                    (format *standard-output* prompt)
+                    (force-output *standard-output*)
+                    (setf input (string-downcase (read-line *standard-input*))))
+                (if (or (equal input "y")
+                        (equal input "yes"))
+                    t
+                    nil))
+    ))
+@=
+
+The next function is a convenience, to keep the initial set up code
+clean. It displays a prompt, reads a string and returns it.
+
+@code utility functions [lang=commonlisp]
+(defun get-player-name (player-number)
+    (get-string 
+        (format nil "~%Enter a name for player #~A " (1+ player-number))
+        :default-value (format nil "Player ~A" player-number)))
+@=
+
+The heart of the function is yet another one that we will be using in
+future areas to prompt for input, is a simple little function to get a
+string named `get-string`.
+
+@code utility functions [lang=commonlisp]
+(defun get-string (prompt &key (default-value nil))
+    (format *standard-output* prompt)
+    (let ((input (read-line)))
+        (if (equalp input "")
+            default-value
+            input)
+        ))
+@=
+
+### The Commands ###
 
 After parsing, we will need to execute the function that makes sense for
 our particular state. In order to simplify this process, we will associate
@@ -92,7 +178,7 @@ to the function in a hash table.
 @code Command Lookup Table
 @=
 
-## Packaging ##
+### Packaging ###
 
 As is our wont, we will provide separate package and ASDF system files.
 

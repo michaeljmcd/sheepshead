@@ -12,4 +12,4 @@ html: doc
 	pandoc -i docs/[0-9]*.md -o docs/sheepshead.html --smart --standalone
 
 pdf: doc
-	pandoc -i docs/[0-9]*.md -o docs/sheepshead.pdf --smart --standalone
+	pandoc docs/[0-9]*.md -o docs/sheepshead.pdf --smart --standalone
