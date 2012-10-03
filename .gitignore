@@ -1,0 +1,8 @@
+*.asd
+*.py
+*.out
+docs/[0-9]*.md
+docs/*.ps
+docs/*.pdf
+docs/*.html
+src/*.lisp
