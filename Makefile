@@ -1,10 +1,15 @@
+literate-files := $(wildcard *.sw)
+
 src: sheepshead.sw
 	spiralweb -t sheepshead.sw
 
-docs: doc/sheepshead.md
+doc: docs/[0-9]*.md
 
-doc/sheepshead.md: sheepshead.sw
-	spiralweb -w sheepshead.sw
+docs/[0-9]*.md: $(literate-files)
+	spiralweb -w $(literate-files)
 
-html: doc/sheepshead.md
-	pandoc -i docs/sheepshead.md -o docs/sheepshead.html --smart --standalone
+html: doc
+	pandoc -i docs/[0-9]*.md -o docs/sheepshead.html --smart --standalone
+
+pdf: doc
+	pandoc -i docs/[0-9]*.md -o docs/sheepshead.pdf --smart --standalone
