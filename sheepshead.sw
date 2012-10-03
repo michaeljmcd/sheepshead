@@ -148,7 +148,7 @@ From the above source, the pseudocode is:
 
 Our function will operate on an array, for efficiency's sake.
 Accessing an array, in lisp, is constant time, but accessing the Nth
-element of a list is O(n) time. So, to implement the above algorithm:
+element of a list is O(*n*) time. So, to implement the above algorithm:
 
 @code Data Structures [lang=commonlisp]
 (defmethod shuffle-deck ((deck list))
@@ -613,7 +613,9 @@ card game, the same things rotate. The definitions are here
 Like most Lisp systems, we will pacakge Sheepshead with ASDF. The
 package should be straightforward.
 
-@code Core ASDF Package [out=sheepshead.asd,lang=commonlisp]
+First, the package file:
+
+@code Core Package File [out=src/sheepshead-package.lisp,lang=commonlisp]
 (defpackage #:sheepshead
     (:export game player human-player card hand name players
              play-callback bury-callback blind-callback simple-bot-player
@@ -621,14 +623,20 @@ package should be straightforward.
              +VERSION+ +MINPLAYERS+ +MAXPLAYERS+
              valid-player-count?)
     (:use :cl :asdf))
+@=
 
+And the ASDF file:
+
+@code Core ASDF Package [out=sheepshead.asd,lang=commonlisp]
 (defsystem sheepshead
     :version "0.1"
     :author "Michael McDermott"
     :license "BSD"
     :description "Sheepshead"
     :pathname "src/"
-    :components ((:file "core")))
+    :components ((:file "sheepshead-package") 
+                 (:file "core" :depends-on ("sheepshead-package"))
+                 ))
 @=
 
 <!--- vim: set tw=75 ai: --->

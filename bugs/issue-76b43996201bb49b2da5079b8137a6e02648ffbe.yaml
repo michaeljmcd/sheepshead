@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Reorganize core to work with client-server architecture
+desc: The current architecture is event-driven. This will not work cleanly with the sharp client-server layout. Reorganize the gameflow code to work with the new idea.
+type: :feature
+component: sheepshead
+release: 
+reporter: Michael McDermott <michael@zion>
+status: :unstarted
+disposition: 
+creation_time: 2012-10-03 23:20:58.004107 Z
+references: []
+
+id: 76b43996201bb49b2da5079b8137a6e02648ffbe
+log_events: 
+- - 2012-10-03 23:20:59.071555 Z
+  - Michael McDermott <michael@zion>
+  - created
+  - ""
