@@ -67,7 +67,7 @@ will place them immediately after the the `in-package` statement.
 (defconstant +DECKSIZE+ 32)
 
 (deftype suit
-    '(member :clubs :spads :hearts :diamonds))
+    '(member :clubs :spades :hearts :diamonds))
 
 (defclass card ()
     ((rank :accessor rank :initarg :rank)
