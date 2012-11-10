@@ -25,156 +25,180 @@ Each request is, in effect, a transaction with the game server.
 Sheepshead need not be considered a real-time game. A command is made
 and the results of that command are returned.
 
-Each command has the following components:
+If we use RFC 3117 [^1] as our starting point, we see that we need to
+define the following items as part of our protocol:
 
-* *Command name* indicating what operation is to be performed.
-* *Authentication information* (a username with an optional hashed
-  password) to determine if the client has authorization to perform
-  the operations being requested.
-* *Command arguments* which the server can pass along to the core.
-  These will obviously vary depending on the operation being
-  performed.
+* Framing (or message delimiting).
 
-This information will be encoded as JSON. My first instinct would
-normally be to simply pass S-expressions back and forth which is, in
-principle, very similar to using JSON. After all, JSON is little more
-than an S-expression for JavaScript. The difference is that JSON has
-become sort of a *lingua franca* of object interchange between many
-different programming languages and systems.
+* Message Encoding (or message representation).
 
-If someone wanted to write a client to the Sheepshead server in C++ and I
-used S-expressions, they would likely have to write their own parser
-or else head into some obscure backwater. JSON, on the other hand, is
-very well supported.
+* Error Reporting
 
-Each return will have the following components:
+* Asynchrony
 
-* A *game ID* representing the game against which the transaction was
-  implemented. This may be empty when administrative operations are
-  called.
-* Zero or more *return values*. These are dependent upon the operation
-  being invoked. If the operation was, for example, play a card, the
-  return value may be the new game state.
-* A *transaction ID*. This book keeping value is a diagnostic tool.
-* Zero or more *conditions*. This will be a list, usually empty, of objects
-  that indicate either fatal errors or minor warnings.
+* Authentication
+
+* Privacy
+
+We will specify each of these things in order.
+
+1. Our messages will be delimited in the following manner:
+    1. Receiving data marks the beginning of a message.
+    2. A message is complete when two consecutive newlines (CR-LF, in this
+    case) are received.
+
+2. Each message shall be comprised of a series commands (a complete listing
+   of which is below). Each command has two parts: a command name and
+   any arguments that are necessary for that command. The end of a command
+   is indicated by a single colon (`:`). The precise format of the
+   arguments may depend upon the command, though typically they will be
+   space separated tokens.
+
+3. Errors are reported in each response. 
+
+4. Communications performed under this protocol will be synchronous. No
+support for asynchronous communications will be included in this protocol.
+For the given application domain, there is little point. Each and every
+request can be thought of as one transaction. There is not necessarily any
+reason that a client could not open two transactions, though if there are
+multiple requests that would alter the game state, the latter will take
+effect.
+
+5. Authentication will be required for all transactions with the server.
+A username will be provided with one command and a password provided with
+another. See both below for details. A server may decline to make passwords
+required (e.g. an open server). A username will still be needed to
+correlate the request to a specific player. However, the password command
+will not need to be sent.
+
+6. Due to the non-vital nature of game communications, no support for
+encryption or other privacy protections will be included in this version of
+the protocol.
 
 #### Command Listing ####
 
-`list-games`
+`USER: <username>`
+
+:   Specifies the username with which to authenticate this request.
+
+`PASSWORD: <password>`
+
+:   Specifies the password to be used to authenticate the user. All
+    passwords must be SHA256 hashed and salted with the username. A
+    psuedocode equation would look like:
+
+    `hashed-password = sha256(plaintext-password + username)`
+
+`LIST-GAMES`
 
 :   Lists all active games that the current user has access to.
 
-    **Additional Parameters**
+`JOIN-GAME`
 
-    *None*.
+:   Indicates that the current player wishes to join a game. The precise
+    game must be indicated with a `GAME` command. Optionally, a seat may be
+    specified with the `SEAT` command.
 
-    **Return Format**
+`GAME: <gameid>`
 
-    (#)  `games`--a list of game descriptors for the user to choose
-    between.
+:   Specifies the game that any further operations in this transaction
+    operate on.
 
-`create-game`
+    Indicating a game that the player has not joined or does not have
+    access to will result in an error.
 
-:   Creates a new game on the server.
+`SEAT: <seat>`
 
-    **Additional Parameters**
+:   The 1-based index of the seat that the user is occupying. This
+    instruction is not required (though it may still be sent) if the given
+    player occupies only a single seat in the current game.
 
-    (#) `name`--an optional user-visible name.
-    (#) `seat-count`--the number of slots available.
-    (#) `goal-points`--the number of points to play to. If not specified,
-    this number will be defaulted to 100.
-    (#) `allow-bots-to-be-bumped`--a boolean value 
+    Indicating a seat other than one that the player is responsible for
+    will result in an error.
 
+`BURY: [<card>]+`
+
+:   Instructs the server to bury one or more cards separated by spaces.
+
+`PLAY-CARD: <card>`
+
+:   Indicates the card to be played, using the notation specified below. A
+    `GAME` command is required as part of the transaction. If the user in
+    question is playing multiple seats, a `SEAT` command will also be
+    required.
+
+`RESIGN`
+
+:   Resigns the player from the game. This command may be combined with the
+    `GAME` and `SEAT` commands.
+
+`TAKE-BLIND: <boolean>`
+
+:   Indicates that the player wishes to take the blind. This command may be
+    issued before it is the player's turn to decide. If the bid never
+    reaches the given player, the command will be disregarded without error
+    or warning.
+
+`REGISTER-USER`
+
+:   Begins the process of registering a user. If sent, the `USERNAME` and
+    `PASSWORD` commands are treated as though they are registration
+    information, not authentication information.
+
+`CREATE-GAME: <name>`
+
+:   Creates a new game having the human-readable name *name*.
     If the game seats do not get filled (either through the addition of
     bots or through the addition of human players), the game will close in
     a length of time specified by the server.
 
-`get-game-state`
+`SEAT-COUNT: <count>`
 
-:   Queries the server for the state of a specific game.
+:   When creating a game, this command indicates the seat count desired.
+    Valid values are 3, 4 and 5.
 
-    **Additional Parameters**
+`GOAL-POINTS: <count>`
 
-    (#) `game-id`--the ID of the game whose state is to be queried.
+:   This command indicates the goal to play to when creating a game. A
+    value of -1 indicates that play will continue until there are no longer
+    a sufficient number of players at which point the remaining player with
+    the highest point count will be declared the winner.
 
-`register-user`
+`REPLACE-BOTS: <bool>`
 
-:   Requests the creation of a new user on the game server. The server may
-    permit open authentication. In this case, the password may be empty, but 
-    the server will still check for a unique username.
+:   This command indicates whether bots can be replaced by interested human
+    players when playing a game.
 
-    **Additional Parameters**
+`QUERY-GAME-STATE`
 
-    (#) `username`--a required field indicating the user's handle.
-    (#) `email`--a field with an email address. The server may select to make this optional.
-    (#) `password`--the plain password for the user.
+:   A no-op command that prompts the server to return game state. Must be
+    combined with the `GAME` command and may be combined with the `SEAT`
+    command.
 
-    The result will include either a user ID if the creation was successful
-    or an error message if it failed.
+#### Response Listing ####
 
-`join-game`
+`HAND: [<card>]+`
 
-:   Requests that a given player be allowed to join a specific game.
+:   This line contains all of the cards currently in the player's hand.
 
-    **Additional Parameters**
+`CARDS-TAKEN: [<card>]+`
 
-    (#) `game-id`--the unique identifier associated with a game. Multiple
-    requests of this type have no extra impact (e.g. no error is to be
-    signalled if the user is already a part of the game that the request is
-    for).
+:   A complete list of all cards taken by the current player, including
+    cards buried in the blind.
 
-`resign-game`
+`HAND-POINTS: <count>`
 
-:   Resigns from a game.
+:   The number of points the player has in the current hand. A client may
+    also calculate this value from the `CARDS-TAKEN` command--the results
+    are required to be in sync.
 
-    **Additional Parameters**
+`GAME-POINTS: <count>`
 
-    (#) `game-id`--the unique identifier associated with the game. If the
-    user is not a part of the game that he is attempting to resign from, no
-    error will be returned (he is, after all, already resigned).
+:   The number of points the player has in the current game.
 
-`answer-blind`
+`SEAT-COUNT: <count>`
 
-:    Indicates whether or not a player wishes to take the blind.
-
-    **Additional Parameters**
-
-    (#) `game-id`
-    (#) `answer`--a string that must be either "ACCEPT" or "DECLINE" (case
-    insensitive).
-
-`bury`
-
-:    Buries cards after having taken the blind. If the player has not
-     taken, or cannot take the blind because another player has taken it, a
-     `CANNOT-BURY` error is returned.
-
-    **Additional Parameters**
-
-    (#) `game-id`
-    (#) `cards`--a list of cards to be buried. 
-
-`play-card`
-
-:   Selects a card to play from the user's current hand. This request may
-    be submitted prior to the player's actual turn in the game. In either
-    event, the card will be validated. If the card is invalid, an
-    `INVALID-CARD` error will be included in the response. If it is valid,
-    the card will be played whenever the player's turn comes up.
-
-    If this is sent after the player's card has been selected, but before
-    it has been played in the current trick, the selection will be changed
-    and the latter card played when the player's turn comes up.
-
-    Finally, if a player submits a new `player-card` request after that
-    player's card has been played but before the start of the new trick, it
-    will be ignored entirely and an error signalled to the client.
-
-    **Additional Parameters**
-
-    (#) `game-id`--The game that this card will be played into.
-    (#) `card`--An object indicating the full card to be played. 
+:   The number of seats in the current game.
 
 #### Common Datatypes ####
 
@@ -196,17 +220,10 @@ Game ID
     implementation, the only requirement being that the strings are
     alphanumeric.
 
-Game Descriptor
+Booleans
 
-:   An object describing a game, having the following properties:
-
-    (#) `game-id`--as discussed above.
-    (#) `name`--a creator-specified name.
-    (#) `seat-count`--the number of players in the game.
-    (#) `open-seat-count`--the number of remaining seats to be filled.
-    (#) `goal-points`--the number of points to play to.
-    (#) `expiration-time`--the time at which this game will be closed if
-    insufficient players are added to the game.
+:   Booleans are case insensitive, non-delimited tokens reading either
+    `TRUE` or `FALSE`.
 
 #### Examples ####
 
@@ -227,46 +244,6 @@ terms or really in technological terms of any kind.
 
 When Jane first begins a session with her client, she is shown a list of
 games on the server. This results in the request:
-
-    {
-        command : "list-games",
-        username : "jane",
-        password : "",
-    }
-
-The server then returns the following response:
-
-    {
-        transaction-id : "G8732",
-        game-id : "",
-        return-values : {
-            games : [{"gameid" : "G8123"}]
-        }
-        conditions : []
-    }   
-
-A request to create a new game should look like this:
-
-    {
-        command : "create-game",
-        username : "johnsmith",
-        password : "a2e34fab",
-        arguments : {
-            name: "my-game",
-            seat-count : 4,
-            goal-points : 25
-        }
-    }
-
-The return value will then look like:
-
-    {
-        transaction-id : "G8732",
-        game-id : "G8733",
-        return-values : {
-        }
-        conditions : []
-    }
 
 ### Multiuser ###
 
@@ -306,5 +283,7 @@ This package then needs to be loaded by the ASDF system.
 @code Server ASDF Package [out=sheepshead-server.asd,lang=commonlisp]
 (defsystem)
 @=
+
+[^1]: [RFC 3117](http://www.faqs.org/rfcs/rfc3117.html)
 
 <!--- vim: set tw=75 ai: --->
