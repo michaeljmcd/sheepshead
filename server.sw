@@ -1,4 +1,4 @@
-@doc Sheepshead Server [out=docs/01-server.md]
+@doc Sheepshead Server [out=docs/02-server.md]
 ## The Server ##
 
 One of the goals for this system is for it to allow multiple different
@@ -44,8 +44,7 @@ We will specify each of these things in order.
 
 1. Our messages will be delimited in the following manner:
     1. Receiving data marks the beginning of a message.
-    2. A message is complete when two consecutive newlines (CR-LF, in this
-    case) are received.
+    2. A message is complete when the command `STOP` is encountered.
 
 2. Each message shall be comprised of a series commands (a complete listing
    of which is below). Each command has two parts: a command name and
@@ -53,6 +52,17 @@ We will specify each of these things in order.
    is indicated by a single colon (`:`). The precise format of the
    arguments may depend upon the command, though typically they will be
    space separated tokens.
+
+   Commands for multiple games may be sent or returned. In this case, a
+   `GAME` command will indicate the current command. So, in overview, a
+   multi game message would look like:
+
+        GAME: g1
+        [commands....]
+        GAME: g2
+        [commands....]
+
+   This allows some efficiency in terms of server requests and responses.
 
 3. Errors are reported in each response. 
 
@@ -88,6 +98,22 @@ the protocol.
     psuedocode equation would look like:
 
     `hashed-password = sha256(plaintext-password + username)`
+
+`IS-BOT: <bool>`
+
+:   Allows a client to indicate that it represents a bot. It is not really
+    expected that all bots will implement this. The main reason for its
+    inclusion is so that two people can begin a game with 3 bots (making 5
+    total seats) and allow the bots to be replaced with humans wishing to
+    join.
+
+`TRANSACTION: <transaction-id>`
+
+:   This optional command allows a client to specify multiple transactions
+    without waiting for a server response. When provided, the server will
+    echo this command back out when returning a response. This is a
+    client-generated ID. It is, therefore, up to the client to ensure that
+    the IDs do not clash.
 
 `LIST-GAMES`
 
@@ -175,11 +201,37 @@ the protocol.
     combined with the `GAME` command and may be combined with the `SEAT`
     command.
 
+`STOP`
+
+:   A no-op command that indicates the end of a batch of commands.
+
 #### Response Listing ####
+
+`TRANSACTION: <transaction-id>`
+
+:   The client-specified transaction ID. 
+
+`SEAT: <number>`
+
+:   Indicates which seat will be described in the following lines.
+
+`PLAYER: <username>`
+
+:   Indicates the player controlling the mentioned seat.
 
 `HAND: [<card>]+`
 
 :   This line contains all of the cards currently in the player's hand.
+    This line will only be returned for the player(s) controlled by the
+    requestor.
+
+`GAME-STATUS: <game-status>`
+
+:   Indicates the status of the game as a whole.
+
+`HAND-STATUS: <hand-status>`
+
+:   Indicates the status of the specific hand.
 
 `CARDS-TAKEN: [<card>]+`
 
@@ -199,6 +251,64 @@ the protocol.
 `SEAT-COUNT: <count>`
 
 :   The number of seats in the current game.
+
+`SEATS-AVAILABLE: <count>`
+
+:   The number of seats open in the current game.
+
+`TIME-LEFT: <time>`
+
+:   The amount of time remaining to fill the seats of a game before it is
+    closed.
+
+`STOP`
+
+:   A no-op command that indicates the end of a batch of commands.
+
+#### Errors and Warnings ####
+
+Each response will include an error/warning code to indicate the general
+health of the transaction. Each code is comprised of 4 digits, which take
+on the following significances:
+
+1. The severity digit. This is the highest level overview of what happened.
+   A "1" indicates that everything returned without error or warning, a "2"
+   indicates a non-fatal warning, and a "3" indicates a fatal error.
+2. The second digit indicates which high-level area generated the error.
+3. The remaining two digits are used to specify the exact error returned. 
+
+For areas 2 and 3, we specify tables here that give an exact meaning to the
+possible codes. Any value not listed is unused at this time.
+
+Area #      Name            Description
+------      ----            -----------------------------------------------
+0           N/A             For queries and miscellaneous requests.
+1           Syntax          Non-area specific syntax errors. 
+2           Authentication  Username/password errors.
+3           Authorization   Permissions errors.
+4           Rule Violation  Attempts to perform actions that violate game
+                            rules.
+5           Registration    Errors attempting to register a new user.
+
+With the general areas specified, we can begin a complete listing of errors
+and warnings issued by the system.
+
+Code        Title                           Description
+----        ------------------------        ---------------------------------------------
+1000        OK                              No errors or warnings to report.
+1500        REGISTRATION ACCEPTED           No errors with a registration
+                                            request.        
+3201        BAD USERNAME OR PASSWORD        Unrecognized username or
+                                            password.
+3301        ACCESS DENIED                   An attempt was made to join a
+                                            game or perform an action in a game that the 
+                                            user does not have permissions to.
+3302        BAD SEAT                        The seat specified is not one
+                                            played by the user.
+3303        BAD GAME                        The game specified is not one
+                                            the user is in.
+3401        WRONG SUIT                      An attempt was made to play a
+                                            wrong-suited card.
 
 #### Common Datatypes ####
 
@@ -225,6 +335,14 @@ Booleans
 :   Booleans are case insensitive, non-delimited tokens reading either
     `TRUE` or `FALSE`.
 
+Game Status
+
+:   The valid
+
+Hand Status
+
+:   The valid
+
 #### Examples ####
 
 In order to make the protocol more clear, let's look at some examples.
@@ -245,7 +363,79 @@ terms or really in technological terms of any kind.
 When Jane first begins a session with her client, she is shown a list of
 games on the server. This results in the request:
 
-### Multiuser ###
+    USER: Jane
+    TRANSACTION: 1
+    PASSWORD: 2efb3
+    LIST-GAMES
+    STOP
+
+The server can then respond with:
+
+    1000 OK
+    TRANSACTION: 1
+    GAME: g232a
+    GAME-NAME: Johann's game
+    SEAT-COUNT: 5
+    SEATS-AVAILABLE: 1
+    GOAL-POINTS: 100
+    GAME: g232c
+    GAME-NAME: dragon-quest 17!!!
+    SEAT-COUNT: 3
+    SEATS-AVAILABLE: 0
+    GOAL-POINTS: -1
+    STOP
+
+This indicates that there are two open games available. Jane was invited by
+email to join Johann's game, so she instructs her client to join the game.
+This results in the following server call:
+
+    USER: Jane
+    PASSWORD: 2efb3
+    JOIN-GAME
+    GAME: g232a
+    TRANSACTION: 2
+    STOP
+
+Since this is an open game, the server returns:
+
+    1000 OK
+    TRANSACTION: 2
+    STOP
+
+Since Jane's client now knows she has successfully joined the game, it
+queries the initial game state to display a screen to her.
+
+    USER: Jane
+    PASSWORD: 2efb3
+    TRANSACTION: 3
+    QUERY-GAME-STATE
+    STOP
+
+Since the game begins immediately once the last player has joined,
+the server then responds:
+
+    1000 OK
+    TRANSACTION: 3
+    GAME-STATUS: BEGINNING
+    HAND-STATUS: DEALING
+    SEAT: 1
+    GAME-POINTS: 0
+    PLAYER: Johann
+    SEAT: 2
+    GAME-POINTS: 0
+    PLAYER: Bob
+    SEAT: 3
+    GAME-POINTS: 0
+    PLAYER: Hans
+    SEAT: 4
+    GAME-POINTS: 0
+    PLAYER: Jacob
+    SEAT: 5
+    GAME-POINTS: 0
+    PLAYER: Jane
+    STOP
+
+### User Management ###
 
 All users will be managed by the server.
 

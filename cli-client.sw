@@ -1,4 +1,4 @@
-@doc Command Line Client[out=docs/02-cli-client.md]
+@doc Command Line Client[out=docs/03-cli-client.md]
 ## Command-Line Client ##
 
 The first client will be a simple one, primarily designed to test the
