@@ -1,7 +1,7 @@
 % Specification for Sheepshead Command Line Interface
 % Michael McDermott
 
-The longterm goal is to build a nice web-based interface for the game of
+The long term goal is to build a nice web-based interface for the game of
 sheepshead. I will build a command line interface (CLI) first in order to better
 test the server.
 
@@ -42,6 +42,8 @@ will expand on the individual commands in the following subsections.
 * `pass`
 * `play`
 * `bury`
+* `hand`
+* `buried`
 
 ### `help` ###
 
@@ -102,10 +104,86 @@ The second form is used to display information about a user's profile, like so:
 
 ### `start` ###
 
-The start command allows a user to create a new game to be run on the server.
+The `start` command allows a user to create a new game to be run on the server.
 The only option at present is to specify the name of the game for identification
 by other players.
 
     start <game name>
 
+The server may respond with an alternate game name, if the current one is
+already taken. In either event, the server will respond with a game ID.
+
+### `join` ###
+
+The `join` command allows a user to attempt to join a game that has been created
+and has an available seat. The command takes the form
+
+    join <game ID>
+
+The server will respond with whether or not the joining was successful.
+
+### `take` ###
+
+The `take` command is only valid during the initial phase of the game. There is
+no qualifier. 
+
+    take
+
+The command can be entered in advance of the user's turn to pick and the
+decision taken into account at the last moment.
+
+### `pass` ###
+
+This is the sister command to `take`. It instructs the game engine to pass when
+it becomes the current player's turn to choose.
+
+### `bury` ###
+
+If a player has taken the blind that player must bury a number of cards matching
+the number received in the blind. The `bury` command accomplishes this. It may
+only be invoked after the player has taken the blind and then only once.
+
+The cards may be buried by 1-based index or by a shorthand of their names
+
+    bury 1 2 3
+
+and
+
+    bury AC 6D KS
+
+the latter form indicating that the Ace of Spades, 6 of Diamonds and King of
+Spades should be buried.
+
+### `play` ###
+
+Play uses the same format for card representation as `bury`, but may only be
+used with a single entry. This can be done in advance of a player's turn to
+play and the card changed before the player's turn comes by entering the command
+again.
+
+The command should take the form
+
+    play 1
+
+or
+
+    play KS
+
+### `hand` ###
+
+The `hand` command re-prints the player's hand under the prompt. It is invoked
+without argument and returns two lines of output.
+
+    KS     AD    7C
+    1      2     3
+
+### `buried` ###
+
+This command is invoked without argumetns and uses the same output format as
+`hand`, the only difference being that it shows a player what cards they buried
+at the outset of the match.
+
 ## Conclusion ##
+
+This is version VERSION_NUMBER of this specification. It is non-final and
+probably incomplete. 

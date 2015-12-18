@@ -1,15 +1,5 @@
-literate-files := $(wildcard *.sw)
+VERSION = 0.1.0
+html: doc/html/specification-cli-client.html
 
-src: sheepshead.sw
-	spiralweb tangle sheepshead.sw
-
-doc: docs/[0-9]*.md
-
-docs/[0-9]*.md: $(literate-files)
-	spiralweb weave $(literate-files)
-
-html: doc
-	pandoc -i docs/[0-9]*.md -o docs/sheepshead.html --smart --standalone --toc
-
-pdf: doc
-	pandoc docs/[0-9]*.md -o docs/sheepshead.pdf --smart --standalone
+doc/html/specification-cli-client.html: doc/specification-cli-client.md
+	cat doc/docs.m4 doc/specification-cli-client.md | m4 | pandoc -o doc/html/specification-cli-client.html --smart --standalone
