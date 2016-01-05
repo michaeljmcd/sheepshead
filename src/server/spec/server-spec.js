@@ -8,3 +8,10 @@ describe('Index', function() {
             .expect('hello world', done);
     });
 });
+
+describe('Connect User', function() {
+    it('should return a user', function(done) {
+        request.post('/user')
+            .expect(200, done);
+    });
+});

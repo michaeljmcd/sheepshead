@@ -1,12 +1,11 @@
-'use strict';
 /* jshint esnext:true  */
 
-var User = function() {
+module.exports.User = function() {
     this.nickname = "";
     this.ticket = "";
 };
 
-var Room = function() {
+module.exports.Room = function() {
     this.id = "";
     this.name = "";
     this.seats = 3;

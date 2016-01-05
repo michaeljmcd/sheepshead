@@ -3,6 +3,8 @@
 var koa = require('koa'),
     route = require('koa-route'),
     winston = require('winston'),
+    json = require('koa-json'),
+    User = require('./lib/model').User,
     
     app = module.exports = koa();
 
@@ -14,7 +16,8 @@ function* index() {
 }
 
 function* connectUser() {
-    this.body = 'user';
+    var user = new User();
+    this.body = user;
 }
 
 app.on('error', function(error) {

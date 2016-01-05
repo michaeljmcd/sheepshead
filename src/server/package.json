@@ -7,5 +7,15 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Michael McDermott",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "co-body": "^4.0.0",
+    "jasmine": "^2.4.1",
+    "koa": "^1.1.2",
+    "koa-json": "^1.1.1",
+    "koa-route": "^2.4.2",
+    "lokijs": "^1.3.10",
+    "supertest": "^1.1.0",
+    "winston": "^2.1.1"
+  }
 }
