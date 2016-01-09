@@ -4,21 +4,12 @@ var koa = require('koa'),
     route = require('koa-route'),
     winston = require('winston'),
     json = require('koa-json'),
-    User = require('./lib/model').User,
+    routes = require('./routes'),
     
     app = module.exports = koa();
 
-app.use(route.get('/', index));
-app.use(route.post('/user', connectUser));
-
-function* index() {
-    this.body = 'hello world';
-}
-
-function* connectUser() {
-    var user = new User();
-    this.body = user;
-}
+app.use(route.get('/', routes.index));
+app.use(route.post('/user', routes.connectUser));
 
 app.on('error', function(error) {
     winston.error(error);
