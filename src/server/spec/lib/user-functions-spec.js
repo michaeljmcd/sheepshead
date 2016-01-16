@@ -38,4 +38,18 @@ describe('registerUser', function() {
         var userFound = userLogic.findUserByNickname("alice");
         expect(userFound).to.be(undefined);
     });
+
+    it('should give a new nickname for a duplicate nickname', function() {
+        var user1 = new User();
+        user1.nickname = "bob";
+        
+        var user2 = new User();
+        user2.nickname = "alice";
+
+        var user3 = new User();
+        user3.nickname = "bob";
+
+        userLogic.registerUser(user1);
+        userLogic.registerUser(user2);
+    });
 });
