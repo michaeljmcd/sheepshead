@@ -2,17 +2,21 @@ var User = require('./model').User,
     loki = require('lokijs'),
     winston = require('winston'),
     collection = require('lodash/collection'),
+    util = require('./utility-functions'),
 
     db = new loki('a.json'),
     users = db.addCollection('users');
 
 module.exports.registerUser = function(userToAdd) {
+    //TODO: add check for existing nickname
     userToAdd.ticket = generateTicket(userToAdd);
     users.insert(userToAdd);
+
+    return new User(userToAdd);
 };
 
 module.exports.findUserByNickname = function(nickname) {
-    if (isVoid(nickname)) {
+    if (util.isVoid(nickname)) {
         return null;
     }
 
@@ -29,10 +33,6 @@ module.exports.findUserByNickname = function(nickname) {
     }
 };
 
-function isVoid(value) {
-    return value === null || value === undefined;
-}
-
 function generateTicket(userToAdd) {
     var isUnique = false,
         currentTicket = "";
@@ -40,7 +40,7 @@ function generateTicket(userToAdd) {
     while(!isUnique) {
         currentTicket = generateTicketString(); 
         var userWithTicket = findUserWithTicket(currentTicket);
-        isUnique = isVoid(userWithTicket);
+        isUnique = util.isVoid(userWithTicket);
     }
 
     return currentTicket;
