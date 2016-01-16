@@ -1,4 +1,6 @@
 var gulp = require('gulp'),
+    jshint = require('gulp-jshint'),
+    mocha = require('gulp-mocha'),
     pandoc = require('gulp-pandoc');
 
 gulp.task('generate documentation', function() {
@@ -12,4 +14,16 @@ gulp.task('generate documentation', function() {
         .pipe(gulp.dest('doc/html/'));
 });
 
-gulp.task('default', ['generate documentation']);
+gulp.task('lint server module', function() {
+    gulp.src(['src/server/*.js', 'src/server/lib/*.js', 'src/server/spec/**/*.js'])
+        .pipe(jshint())
+        .pipe(jshint.reporter('default'));
+});
+
+gulp.task('run server tests', function() {
+    gulp.src('src/server/spec/**/*.js', {read: false})
+        .pipe(mocha())
+        .once('end', function() { process.exit(); });
+});
+
+gulp.task('default', ['generate documentation', 'lint server module', 'run server tests']);

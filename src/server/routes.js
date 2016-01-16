@@ -1,3 +1,5 @@
+/* jshint esversion:6 */
+
 var User = require('./lib/model').User,
     userLogic = require('./lib/user-functions'),
     roomLogic = require('./lib/room-functions'),
@@ -6,24 +8,23 @@ var User = require('./lib/model').User,
     parse = require('co-body'),
     winston = require('winston');
 
-module.exports.index = function* () {
-    this.body = 'hello world';
-};
-
 module.exports.connectUser = function* () {
-    var userToConnect = yield parse.json(this),
+    var parsedBody = yield parse.json(this),
+        newUser = new User(parsedBody),
         createdUser = null;
 
-    if (util.isVoid(userToConnect) || !userToConnect.nickname || userToConnect.nickname.length > 255) {
+    if (util.isVoid(parsedBody) || !newUser.isValid()) {
         this.throw('Invalid user received', 422);
     }
 
-    winston.info("Attempting to register user %j", userToConnect);
-    createdUser = userLogic.registerUser(userToConnect); 
+    winston.info("Attempting to register user", newUser);
+    createdUser = userLogic.registerUser(newUser); 
     winston.info("User %s registered with ticket %s", createdUser.nickname, createdUser.ticket);
 
     this.body = createdUser;
 };
 
 module.exports.getPublicGameRooms = function* () {
+    this.body = '';
+    yield;
 };

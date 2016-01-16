@@ -8,7 +8,6 @@ var koa = require('koa'),
     
     app = module.exports = koa();
 
-app.use(route.get('/', routes.index));
 app.use(route.post('/user', routes.connectUser));
 app.use(route.get('/room', routes.getPublicGameRooms));
 

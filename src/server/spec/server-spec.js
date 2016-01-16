@@ -1,13 +1,8 @@
 var app = require('../server'),
+    winston = require('winston'),
     request = require('supertest').agent(app.listen());
 
-describe('Index', function() {
-    it('should work', function(done) {
-        request.get('/')
-            .expect(200)
-            .expect('hello world', done);
-    });
-});
+winston.level = 'error';
 
 describe('Connect User', function() {
     it('should return a user', function(done) {
