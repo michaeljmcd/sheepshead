@@ -185,5 +185,5 @@ at the outset of the match.
 
 ## Conclusion ##
 
-This is version VERSION_NUMBER of this specification. It is non-final and
+This is version 0.1.0 of this specification. It is non-final and
 probably incomplete. 
