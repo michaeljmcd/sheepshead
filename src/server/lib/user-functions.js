@@ -4,18 +4,20 @@ var User = require('./model').User,
     collection = require('lodash/collection'),
     util = require('./utility-functions'),
 
-    db = new loki('a.json'),
+    db = new loki('Sheepshead Game Server State'),
     users = db.addCollection('users');
 
-module.exports.registerUser = function(userToAdd) {
-    //TODO: add check for existing nickname
+function registerUser (input) {
+    var userToAdd = new User(input);
     userToAdd.ticket = generateTicket(userToAdd);
+    assignUniqueNickname(userToAdd);
+
     users.insert(userToAdd);
 
     return new User(userToAdd);
-};
+}
 
-module.exports.findUserByNickname = function(nickname) {
+function findUserByNickname (nickname) {
     if (util.isVoid(nickname)) {
         return null;
     }
@@ -31,7 +33,10 @@ module.exports.findUserByNickname = function(nickname) {
     if (databaseResults.length) {
         return databaseResults[0];
     }
-};
+}
+
+module.exports.registerUser = registerUser;
+module.exports.findUserByNickname = findUserByNickname;
 
 function generateTicket(userToAdd) {
     var isUnique = false,
@@ -44,6 +49,19 @@ function generateTicket(userToAdd) {
     }
 
     return currentTicket;
+}
+
+function assignUniqueNickname(user) {
+    var userAlreadyExists = !!findUserByNickname(user.nickname),
+        incrementCount = 1,
+        newNickname = user.nickname;
+
+    while(userAlreadyExists) {
+        newNickname = user.nickname + incrementCount++;
+        userAlreadyExists = !!findUserByNickname(newNickname);
+    }
+
+    user.nickname = newNickname;
 }
 
 function generateTicketString() {

@@ -37,3 +37,13 @@ describe('Connect User', function() {
             .end(done);
     });
 });
+
+describe('Game Rooms', function() {
+    it('should return empty when no games have yet been created', function(done) {
+        request.get('/room')
+            .send('Accept', 'application/json')
+            .expect(200)
+            .expect([])
+            .end(done);
+    });
+});

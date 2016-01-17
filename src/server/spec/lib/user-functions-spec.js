@@ -49,7 +49,10 @@ describe('registerUser', function() {
         var user3 = new User();
         user3.nickname = "bob";
 
-        userLogic.registerUser(user1);
-        userLogic.registerUser(user2);
+        var registered1 = userLogic.registerUser(user1);
+        var registered2 = userLogic.registerUser(user2);
+        var registered3 = userLogic.registerUser(user3);
+
+        expect(registered3.nickname).not.to.be('bob');
     });
 });

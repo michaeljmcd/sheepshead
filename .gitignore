@@ -6,3 +6,5 @@ docs/*.ps
 docs/*.pdf
 docs/*.html
 src/*.lisp
+*.swp
+src/server/node_modules

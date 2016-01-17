@@ -25,6 +25,6 @@ module.exports.connectUser = function* () {
 };
 
 module.exports.getPublicGameRooms = function* () {
-    this.body = '';
-    yield;
+    this.body = roomLogic.getGameRooms();
+    yield this.body;
 };
