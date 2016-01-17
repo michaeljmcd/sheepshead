@@ -23,6 +23,7 @@ gulp.task('lint server module', function() {
 gulp.task('run server tests', function() {
     gulp.src('src/server/spec/**/*.js', {read: false})
         .pipe(mocha())
+        .once('error', function() { process.exit(1); })
         .once('end', function() { process.exit(); });
 });
 

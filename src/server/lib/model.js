@@ -14,7 +14,7 @@ module.exports.User = function() {
 
 module.exports.User.prototype.isValid = function() {
     var me = this;
-    return  me.nickname && me.nickname.length <= 255;
+    return !!(me.nickname && me.nickname.length <= 255);
 };
 
 module.exports.Room = function() {

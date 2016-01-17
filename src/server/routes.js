@@ -1,4 +1,4 @@
-/* jshint esversion:6 */
+'use strict';
 
 var User = require('./lib/model').User,
     userLogic = require('./lib/user-functions'),
