@@ -8,5 +8,6 @@ before_script:
     - npm install gulp-jshint --save-dev
     - npm install gulp-mocha --save-dev
     - npm install gulp-pandoc --save-dev
+    - npm install gulp-plumber --save-dev
 script:
     - gulp 
