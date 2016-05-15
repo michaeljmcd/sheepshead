@@ -20,11 +20,11 @@ gulp.task('lint server module', function() {
         .pipe(jshint.reporter('default'));
 });
 
-gulp.task('run server tests', function() {
+gulp.task('test', function() {
     gulp.src('src/server/spec/**/*.js', {read: false})
         .pipe(mocha())
         .once('error', function() { process.exit(1); })
         .once('end', function() { process.exit(); });
 });
 
-gulp.task('default', ['generate documentation', 'lint server module', 'run server tests']);
+gulp.task('default', ['lint server module', 'test']);

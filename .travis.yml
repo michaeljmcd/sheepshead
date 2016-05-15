@@ -5,5 +5,8 @@ node_js:
 before_script:
     - npm install -g gulp
     - npm install gulp --save-dev
+    - npm install gulp-jshint --save-dev
+    - npm install gulp-mocha --save-dev
+    - npm install gulp-pandoc --save-dev
 script:
-    - gulp
+    - gulp 
