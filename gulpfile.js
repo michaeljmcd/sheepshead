@@ -16,7 +16,7 @@ gulp.task('generate documentation', function() {
 });
 
 gulp.task('lint', function() {
-    gulp.src(['src/server/*.js', 'src/server/lib/*.js', 'src/server/spec/**/*.js'])
+    gulp.src(['*.js', 'lib/*.js', 'spec/**/*.js'])
         .pipe(plumber({
             errorHandler: function (err) {
                 console.log(err);
@@ -28,7 +28,7 @@ gulp.task('lint', function() {
 });
 
 gulp.task('test', function() {
-    gulp.src('src/server/spec/**/*.js', {read: false})
+    gulp.src('spec/**/*.js', {read: false})
         .pipe(plumber({
             errorHandler: function (err) {
                 console.log(err);
