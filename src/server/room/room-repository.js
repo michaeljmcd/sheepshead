@@ -1,4 +1,4 @@
-var Room = require('./model').Room,
+var Room = require('./room').Room,
     winston = require('winston'),
     loki = require('lokijs'),
     l_ = require('lodash'),

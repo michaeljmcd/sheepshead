@@ -1,4 +1,4 @@
-var User = require('./model').User,
+var User = require('./user').User,
     loki = require('lokijs'),
     winston = require('winston'),
     collection = require('lodash/collection'),
