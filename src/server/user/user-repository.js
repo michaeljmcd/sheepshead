@@ -3,8 +3,10 @@ var User = require('./user').User,
     winston = require('winston'),
     collection = require('lodash/collection'),
     util = require('../util/utility-functions'),
+    DatabaseLocator = require('../persistence/database-locator').DatabaseLocator,
 
-    db = new loki('Sheepshead Game Server State'),
+    databaseLocator = new DatabaseLocator(),
+    db = databaseLocator.instance,
     users = db.addCollection('users');
 
 function registerUser (input) {

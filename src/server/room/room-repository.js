@@ -2,8 +2,9 @@ var Room = require('./room').Room,
     winston = require('winston'),
     loki = require('lokijs'),
     l_ = require('lodash'),
+    DatabaseLocator = require('../persistence/database-locator').DatabaseLocator,
     
-    db = new loki('Sheepshead Game Server State'),
+    db = new DatabaseLocator().instance,
     gameRooms = db.addCollection('gameRooms');
 
 function getGameRooms() {
