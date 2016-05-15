@@ -1,9 +1,9 @@
 language: node_js
 node_js:
-    - "5"
     - "5.1"
     - "4"
 before_script:
     - npm install -g gulp
+    - npm install gulp --save-dev
 script:
     - gulp
