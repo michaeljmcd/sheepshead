@@ -1,18 +1,18 @@
-var userLogic = require('../../lib/user-functions'),
-    User = require('../../lib/model').User,
+var userRepository = require('../../user/user-repository'),
+    User = require('../../user/user').User,
     expect = require('expect.js');
 
 describe('registerUser', function() {
     it('should return null for a null nickname', function() {
-        expect(userLogic.findUserByNickname(null)).to.be(null);
+        expect(userRepository.findUserByNickname(null)).to.be(null);
     });
 
     it('should return null for an undefined nickname', function() {
-        expect(userLogic.findUserByNickname(undefined)).to.be(null);
+        expect(userRepository.findUserByNickname(undefined)).to.be(null);
     });
 
     it('should return null for an empty nickname', function() {
-        expect(userLogic.findUserByNickname('')).to.be(null);
+        expect(userRepository.findUserByNickname('')).to.be(null);
     });
 
     it('should find a user after registration', function() {
@@ -20,9 +20,9 @@ describe('registerUser', function() {
         newUser.nickname = "bob";
         newUser.ticket = "1";
 
-        userLogic.registerUser(newUser);
+        userRepository.registerUser(newUser);
 
-        var userFound = userLogic.findUserByNickname("bob");
+        var userFound = userRepository.findUserByNickname("bob");
         expect(userFound).not.to.be(undefined);
         expect(userFound.nickname).to.be('bob');
         expect(userFound.ticket.length).to.be(32);
@@ -33,9 +33,9 @@ describe('registerUser', function() {
         newUser.nickname = "bob";
         newUser.ticket = "1";
 
-        userLogic.registerUser(newUser);
+        userRepository.registerUser(newUser);
 
-        var userFound = userLogic.findUserByNickname("alice");
+        var userFound = userRepository.findUserByNickname("alice");
         expect(userFound).to.be(undefined);
     });
 
@@ -49,9 +49,9 @@ describe('registerUser', function() {
         var user3 = new User();
         user3.nickname = "bob";
 
-        var registered1 = userLogic.registerUser(user1);
-        var registered2 = userLogic.registerUser(user2);
-        var registered3 = userLogic.registerUser(user3);
+        var registered1 = userRepository.registerUser(user1);
+        var registered2 = userRepository.registerUser(user2);
+        var registered3 = userRepository.registerUser(user3);
 
         expect(registered3.nickname).not.to.be('bob');
     });

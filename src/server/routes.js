@@ -1,8 +1,8 @@
 'use strict';
 
-var User = require('./lib/model').User,
-    userLogic = require('./lib/user-functions'),
-    roomLogic = require('./lib/room-functions'),
+var User = require('./user/user').User,
+    userRepository = require('./user/user-repository'),
+    roomRepository = require('./room/room-repository'),
     util = require('./util/utility-functions'),
 
     parse = require('co-body'),
@@ -18,13 +18,13 @@ module.exports.connectUser = function* () {
     }
 
     winston.info("Attempting to register user", newUser);
-    createdUser = userLogic.registerUser(newUser); 
+    createdUser = userRepository.registerUser(newUser); 
     winston.info("User %s registered with ticket %s", createdUser.nickname, createdUser.ticket);
 
     this.body = createdUser;
 };
 
 module.exports.getPublicGameRooms = function* () {
-    this.body = roomLogic.getGameRooms();
+    this.body = roomRepository.getGameRooms();
     yield this.body;
 };

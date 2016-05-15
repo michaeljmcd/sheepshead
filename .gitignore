@@ -8,3 +8,5 @@ docs/*.html
 src/*.lisp
 *.swp
 src/server/node_modules
+doc/html/*.html
+*.swo
