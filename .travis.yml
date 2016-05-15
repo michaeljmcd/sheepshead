@@ -4,10 +4,7 @@ node_js:
     - "4"
 before_script:
     - npm install -g gulp
-    - npm install gulp --save-dev
-    - npm install gulp-jshint --save-dev
-    - npm install gulp-mocha --save-dev
-    - npm install gulp-pandoc --save-dev
-    - npm install gulp-plumber --save-dev
+    - npm install gulp gulp-jshint gulp-mocha gulp-pandoc gulp-plumber --save-dev
+    - npm install src/server
 script:
     - gulp 
