@@ -3,7 +3,7 @@
 var User = require('./lib/model').User,
     userLogic = require('./lib/user-functions'),
     roomLogic = require('./lib/room-functions'),
-    util = require('./lib/utility-functions'),
+    util = require('./util/utility-functions'),
 
     parse = require('co-body'),
     winston = require('winston');

@@ -2,7 +2,7 @@ var User = require('./model').User,
     loki = require('lokijs'),
     winston = require('winston'),
     collection = require('lodash/collection'),
-    util = require('./utility-functions'),
+    util = require('../util/utility-functions'),
 
     db = new loki('Sheepshead Game Server State'),
     users = db.addCollection('users');

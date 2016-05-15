@@ -1,5 +1,5 @@
 'use strict';
-var util = require('./utility-functions');
+var util = require('../util/utility-functions');
 
 function User() {
     this.nickname = "";
