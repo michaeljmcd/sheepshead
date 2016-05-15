@@ -6,5 +6,6 @@ before_script:
     - npm install -g gulp
     - npm install gulp gulp-jshint gulp-mocha gulp-pandoc gulp-plumber --save-dev
     - npm install src/server
+    - cd src/server && npm install
 script:
     - gulp 

@@ -15,7 +15,7 @@ gulp.task('generate documentation', function() {
         .pipe(gulp.dest('doc/html/'));
 });
 
-gulp.task('lint server module', function() {
+gulp.task('lint', function() {
     gulp.src(['src/server/*.js', 'src/server/lib/*.js', 'src/server/spec/**/*.js'])
         .pipe(plumber({
             errorHandler: function (err) {
@@ -40,4 +40,4 @@ gulp.task('test', function() {
         .once('end', function() { process.exit(); });
 });
 
-gulp.task('default', ['lint server module', 'test']);
+gulp.task('default', ['lint', 'test']);
