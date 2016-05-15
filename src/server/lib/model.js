@@ -32,7 +32,7 @@ function Room() {
         this.seats = objectToCopy.seats;
         this.availableSeats = objectToCopy.availableSeats;
     }
-};
+}
 
 Room.prototype.isValid = function() {
     var isValid = true,
