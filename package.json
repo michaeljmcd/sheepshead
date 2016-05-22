@@ -8,6 +8,10 @@
   },
   "author": "Michael McDermott",
   "license": "MIT",
+  "repository": {
+      "type": "git",
+      "url": "git://github.com/michaeljmcd/sheepshead.git"
+  },
   "dependencies": {
     "co-body": "^4.0.0",
     "koa": "^1.1.2",
@@ -18,6 +22,12 @@
   },
   "devDependencies": {
     "expect.js": "^0.3.1",
+    "gulp": "^3.9.1",
+    "gulp-jshint": "^2.0.1",
+    "gulp-mocha": "^2.2.0",
+    "gulp-pandoc": "^0.2.2",
+    "gulp-plumber": "^1.1.0",
+    "jshint": "^2.9.2",
     "mocha": "^2.4.5",
     "supertest": "^1.2.0"
   }
