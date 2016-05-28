@@ -9,9 +9,16 @@ exports.connect = function(callback) {
         }
 
         database = db;
-        callback();
-        // TODO: figure out how we close the database
+        
+        if (callback) {
+            callback();
+        }
     });
+};
+
+// TODO: figure out when we close the database
+exports.disconnect = function(callback) {
+    database.close(true, callback);
 };
 
 exports.getDatabase = function() {
@@ -25,3 +32,11 @@ exports.getUserCollection = function() {
 exports.getRoomCollection = function() {
     return database.collection('rooms');
 }
+
+exports.clearUsers = function() {
+    exports.getUserCollection().remove({});
+};
+
+exports.clearRooms = function() {
+    exports.getRoomCollection().remove({});
+};

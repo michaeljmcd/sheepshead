@@ -2,7 +2,8 @@ var User = require('./user').User,
     winston = require('winston'),
     collection = require('lodash/collection'),
     util = require('../util/utility-functions'),
-    database = require('../persistence/database');
+    database = require('../persistence/database'),
+    co = require('co');
 
 function registerUser (input) {
     var userToAdd = new User(input),
@@ -27,7 +28,7 @@ function findUserByNickname (nickname) {
         return null;
     }
 
-    var databaseResults = users.find({nickname: { '$eq': nickname }});
+    var databaseResults = users.find({"nickname": { '$eq': nickname }}).toArray();
 
     if (databaseResults.length) {
         return databaseResults[0];

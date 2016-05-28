@@ -1,8 +1,18 @@
 var app = require('../server'),
     winston = require('winston'),
-    request = require('supertest').agent(app.listen());
+    request = require('supertest').agent(app.listen()),
+    database = require('../persistence/database');
 
 winston.level = 'error';
+
+beforeEach(function() {
+    database.connect(function() {
+        database.clearUsers();
+        database.clearRooms();
+        // TODO: we need to separate databases for general use and for the
+        // integration test
+    });
+});
 
 describe('Connect User', function() {
     it('should return a user', function(done) {

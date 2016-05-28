@@ -4,8 +4,7 @@ var Room = require('./room').Room,
     database = require('../persistence/database');
 
 function getGameRooms() {
-    var allRooms = database.getRoomCollection.find({});
-
+    var allRooms =  database.getRoomCollection().find().toArray();
     return l_.map(allRooms, function(val) {
         return new Room(val);
     });

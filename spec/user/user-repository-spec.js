@@ -1,6 +1,16 @@
 var userRepository = require('../../user/user-repository'),
     User = require('../../user/user').User,
-    expect = require('expect.js');
+    expect = require('expect.js'),
+    database = require('../../persistence/database');
+
+beforeEach(function() {
+    database.connect(function() {
+        database.clearUsers();
+        database.clearRooms();
+        // TODO: we need to separate databases for general use and for the
+        // integration test
+    });
+});
 
 describe('registerUser', function() {
     it('should return null for a null nickname', function() {
