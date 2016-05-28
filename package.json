@@ -9,8 +9,8 @@
   "author": "Michael McDermott",
   "license": "MIT",
   "repository": {
-      "type": "git",
-      "url": "git://github.com/michaeljmcd/sheepshead.git"
+    "type": "git",
+    "url": "git://github.com/michaeljmcd/sheepshead.git"
   },
   "dependencies": {
     "co-body": "^4.0.0",
@@ -18,6 +18,7 @@
     "koa-json": "^1.1.1",
     "koa-route": "^2.4.2",
     "lodash": "^3.10.1",
+    "mongodb": "^2.1.19",
     "winston": "^2.1.1"
   },
   "devDependencies": {

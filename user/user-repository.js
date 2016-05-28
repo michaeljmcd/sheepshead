@@ -1,16 +1,13 @@
 var User = require('./user').User,
-    loki = require('lokijs'),
     winston = require('winston'),
     collection = require('lodash/collection'),
     util = require('../util/utility-functions'),
-    DatabaseLocator = require('../persistence/database-locator').DatabaseLocator,
-
-    databaseLocator = new DatabaseLocator(),
-    db = databaseLocator.instance,
-    users = db.addCollection('users');
+    database = require('../persistence/database');
 
 function registerUser (input) {
-    var userToAdd = new User(input);
+    var userToAdd = new User(input),
+        users = database.getUserCollection();
+
     userToAdd.ticket = generateTicket(userToAdd);
     assignUniqueNickname(userToAdd);
 
@@ -20,6 +17,8 @@ function registerUser (input) {
 }
 
 function findUserByNickname (nickname) {
+    var users = database.getUserCollection();
+
     if (util.isVoid(nickname)) {
         return null;
     }
@@ -28,9 +27,7 @@ function findUserByNickname (nickname) {
         return null;
     }
 
-    var databaseResults = users.chain()
-        .find({nickname: { '$eq': nickname }})
-        .data();
+    var databaseResults = users.find({nickname: { '$eq': nickname }});
 
     if (databaseResults.length) {
         return databaseResults[0];
@@ -76,9 +73,8 @@ function generateTicketString() {
 }
 
 function findUserWithTicket(ticket) {
-    var databaseResults = users.chain()
-        .find({ticket: { '$eq': ticket }})
-        .data();
+    var users = database.getUserCollection(),
+        databaseResults = users.find({ticket: { '$eq': ticket }});
 
     if (databaseResults.length) {
         return databaseResults[0];

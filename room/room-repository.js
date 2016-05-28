@@ -1,14 +1,12 @@
 var Room = require('./room').Room,
     winston = require('winston'),
-    loki = require('lokijs'),
     l_ = require('lodash'),
-    DatabaseLocator = require('../persistence/database-locator').DatabaseLocator,
-    
-    db = new DatabaseLocator().instance,
-    gameRooms = db.addCollection('gameRooms');
+    database = require('../persistence/database');
 
 function getGameRooms() {
-    return l_.map(gameRooms.data, function(val) {
+    var allRooms = database.getRoomCollection.find({});
+
+    return l_.map(allRooms, function(val) {
         return new Room(val);
     });
 }
