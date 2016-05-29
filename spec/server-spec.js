@@ -58,4 +58,12 @@ describe('Game Rooms', function() {
             .expect([])
             .end(done);
     });
+
+    it('should return a new room when one is created', function(done) {
+        request.post('/room')
+            .send({ "name": "room1", "seats": 5, "availableSeats": 5})
+            .set('Accept', 'application/json')
+            .expect(200)
+            .end(done);
+    });
 });

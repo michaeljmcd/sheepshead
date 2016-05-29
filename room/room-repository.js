@@ -11,6 +11,19 @@ function getGameRooms() {
 }
 
 function registerGameRoom (gameRoom) {
+    return new Promise(function(resolve, reject) {
+        var roomToAdd = new Room(gameRoom),
+            rooms = database.getRoomCollection();
+
+        try {
+            rooms.insert(roomToAdd, null, function(err, result) {
+               resolve(roomToAdd);
+            });
+        }
+        catch(err) {
+            reject(err);
+        }
+    });
 }
 
 module.exports.getGameRooms = getGameRooms;

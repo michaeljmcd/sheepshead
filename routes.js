@@ -1,6 +1,7 @@
 'use strict';
 
 var User = require('./user/user').User,
+    Room = require('./room/room').Room,
     userRepository = require('./user/user-repository'),
     roomRepository = require('./room/room-repository'),
     util = require('./util/utility-functions'),
@@ -30,4 +31,9 @@ module.exports.getPublicGameRooms = function* () {
 };
 
 module.exports.createPublicGameRoom = function* () {
+    var parsedBody = yield parse.json(this),
+        newRoom = new Room(parsedBody);
+
+    this.body = roomRepository.registerGameRoom(newRoom);
+    yield this.body;
 };

@@ -12,6 +12,7 @@ var koa = require('koa'),
 database.connect(function() {
     app.use(route.post('/user', routes.connectUser));
     app.use(route.get('/room', routes.getPublicGameRooms));
+    app.use(route.post('/room', routes.createPublicGameRoom));
 
     app.on('error', function(error) {
         winston.error(error);
