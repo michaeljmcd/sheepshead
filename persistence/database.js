@@ -2,6 +2,7 @@ var MongoClient = require('mongodb').MongoClient,
     DATABASE_URI = 'mongodb://localhost:27017/sheepshead',
     database;
 
+// http://wesleytsai.io/2015/08/02/mongodb-connection-pooling-in-nodejs/
 exports.connect = function(callback) {
     MongoClient.connect(DATABASE_URI, function(err, db) {
         if (err) {
@@ -18,7 +19,9 @@ exports.connect = function(callback) {
 
 // TODO: figure out when we close the database
 exports.disconnect = function(callback) {
-    database.close(true, callback);
+    if (database) {
+        database.close(true, callback);
+    }
 };
 
 exports.getDatabase = function() {

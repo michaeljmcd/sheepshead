@@ -6,6 +6,8 @@ var app = require('../server'),
 winston.level = 'error';
 
 beforeEach(function() {
+    database.disconnect();
+
     database.connect(function() {
         database.clearUsers();
         database.clearRooms();

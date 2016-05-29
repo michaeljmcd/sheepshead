@@ -19,13 +19,15 @@ module.exports.connectUser = function* () {
 
     winston.info("Attempting to register user", newUser);
     createdUser = userRepository.registerUser(newUser); 
-    winston.info("User %s registered with ticket %s", createdUser.nickname, createdUser.ticket);
 
-    this.body = createdUser;
+    this.body = yield createdUser;
 };
 
 module.exports.getPublicGameRooms = function* () {
     var result = roomRepository.getGameRooms();
     this.body = result;
     yield this.body;
+};
+
+module.exports.createPublicGameRoom = function* () {
 };

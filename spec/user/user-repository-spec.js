@@ -30,12 +30,18 @@ describe('registerUser', function() {
         newUser.nickname = "bob";
         newUser.ticket = "1";
 
-        userRepository.registerUser(newUser);
+        var p = userRepository.registerUser(newUser);
 
-        var userFound = userRepository.findUserByNickname("bob");
-        expect(userFound).not.to.be(undefined);
-        expect(userFound.nickname).to.be('bob');
-        expect(userFound.ticket.length).to.be(32);
+        p.then(function(userFound) {
+            var userFound = userRepository.findUserByNickname("bob");
+            expect(userFound).not.to.be(undefined);
+            expect(userFound.nickname).to.be('bob');
+            expect(userFound.ticket.length).to.be(32);
+            done();
+        })
+        .catch(function(err) {
+            done(err);
+        });
     });
 
     it('should fail to find an unregistered user', function() {

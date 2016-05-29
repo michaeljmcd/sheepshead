@@ -6,15 +6,22 @@ var User = require('./user').User,
     co = require('co');
 
 function registerUser (input) {
-    var userToAdd = new User(input),
-        users = database.getUserCollection();
+    return new Promise(function(resolve, reject) {
+        var userToAdd = new User(input),
+            users = database.getUserCollection();
 
-    userToAdd.ticket = generateTicket(userToAdd);
-    assignUniqueNickname(userToAdd);
+        try {
+            userToAdd.ticket = generateTicket(userToAdd);
+            assignUniqueNickname(userToAdd);
 
-    users.insert(userToAdd);
-
-    return new User(userToAdd);
+            users.insert(userToAdd, null, function(err, result) {
+                resolve(new User(userToAdd));
+            });
+        }
+        catch(err) {
+            reject(err);
+        }
+    });
 }
 
 function findUserByNickname (nickname) {
@@ -29,7 +36,7 @@ function findUserByNickname (nickname) {
     }
 
     var databaseResults = users.find({"nickname": { '$eq': nickname }}).toArray();
-
+    
     if (databaseResults.length) {
         return databaseResults[0];
     }

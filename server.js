@@ -19,6 +19,6 @@ database.connect(function() {
 
     if (!module.parent) {
         winston.info('starting up app');
-        app.listen(3000);
+        app.listen(process.env.PORT || 3000);
     }
 });
