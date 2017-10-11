@@ -1,15 +1,36 @@
-# Sheepshead #
+# sheepshead
 
-Sheepshead is a client-server implementation of a German-American card game
-played mostly in Wisconsin and Minnesota. Outside of this geographic
-region, few people seem to recognize it.
+FIXME: description
 
-The rules can be read at [Pagat](http://www.pagat.com/schafk/shep.html).
+## Installation
 
-This game is still in its very, very early infancy. The long term aim is for many different clients and bots to connect to a simple TCP-based server and play a challenging, friendly game.
+Download from http://example.com/FIXME.
 
-Source is released under the BSD License.
+## Usage
 
-The codebase itself is developed using literate programming and the SpiralWeb LP system. You will need this to hack on the code.
+FIXME: explanation
 
-<!--- vim: set tw=75 ai: --->
+    $ java -jar sheepshead-0.1.0-standalone.jar [args]
+
+## Options
+
+FIXME: listing of options this app accepts.
+
+## Examples
+
+...
+
+### Bugs
+
+...
+
+### Any Other Sections
+### That You Think
+### Might be Useful
+
+## License
+
+Copyright © 2017 FIXME
+
+Distributed under the Eclipse Public License either version 1.0 or (at
+your option) any later version.
