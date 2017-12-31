@@ -65,3 +65,14 @@
 (defn advance-hand [hand input]
   (apply (-> :state hand hand-state-functions) 
          [hand input]))
+
+(def requirement-state-functions
+  #^{:private true}
+  {
+   :deal (fn [hand] nil)
+  })
+
+; This function is used to query what input is required to advance a hand.
+(defn input-requirement [hand]
+  (apply (-> :state hand requirement-state-functions)
+         [hand]))
